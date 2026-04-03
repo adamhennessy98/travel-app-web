@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { BudgetBucket, DateFlexibility } from "@/types/trip";
 
@@ -20,7 +20,7 @@ const BUDGET_OPTIONS: { value: BudgetBucket; label: string }[] = [
   { value: "over700", label: "€700+" },
 ];
 
-export default function ClarifyingPage() {
+function ClarifyingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const rawQuery = searchParams.get("q") ?? "";
@@ -172,7 +172,7 @@ export default function ClarifyingPage() {
           </div>
         )}
 
-        {/* Progress bar */}
+        {/* Progress bar  */}
         <div className="flex items-center gap-3 pt-1">
           <div className="flex-1 flex gap-1.5">
             {[0, 1, 2].map((i) => (
@@ -188,5 +188,13 @@ export default function ClarifyingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ClarifyingPage() {
+  return (
+    <Suspense>
+      <ClarifyingContent />
+    </Suspense>
   );
 }

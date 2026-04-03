@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { flightSearchUrl, hotelSearchUrl, activitySearchUrl } from "@/lib/bookingUrls";
@@ -166,7 +166,7 @@ function ActivityCard({ activity, destination }: { activity: Activity; destinati
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ResultsPage() {
+function ResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [trip, setTrip] = useState<TripResult | null>(null);
@@ -393,5 +393,13 @@ export default function ResultsPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function ResultsPage() {
+  return (
+    <Suspense>
+      <ResultsContent />
+    </Suspense>
   );
 }

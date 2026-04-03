@@ -1,4 +1,12 @@
 import { NextResponse } from "next/server";
+import { getAuthenticatedUser } from "@/lib/apiAuth";
+import { rateLimit } from "@/lib/rateLimit";
+
+const MAX_FIELD_LENGTH = 200;
+
+function sanitise(value: string, maxLen = MAX_FIELD_LENGTH): string {
+  return value.slice(0, maxLen).replace(/[^\w\s\-,.!?''éèêëàâäùûüôöîïçñ€£$@#&()/:\\]+/gi, "").trim();
+}
 
 const SYSTEM_PROMPT =
   "You are a personal travel curator for an app called YourWeekend. Your job is to create a single, cohesive, personalised trip plan based on everything you know about the user and their trip. You do not return generic results. Every recommendation should feel like it was chosen specifically for this person. The best pick flight and hotel should feel obvious. The activities should feel tailored — not tourist board filler. Respond only with a valid raw JSON object. No explanation, no preamble, no markdown, no code blocks. Just the JSON.";
@@ -120,11 +128,29 @@ function humaniseBudget(budget: string): string {
 }
 
 export async function POST(request: Request) {
+  // ── Auth ──
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // ── Rate limit: 10 trip generations per user per hour ──
+  const { allowed } = rateLimit(`trip:${user.id}`, {
+    maxRequests: 10,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "You've made too many requests. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey || apiKey === "your_api_key_here") {
     return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY is not configured in .env.local" },
-      { status: 500 }
+      { error: "Service temporarily unavailable" },
+      { status: 503 }
     );
   }
 
@@ -141,14 +167,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
+  // ── Validate date format ──
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(start) || !dateRegex.test(end)) {
+    return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
+  }
+
+  // ── Sanitise all user inputs ──
   const userPrompt = buildUserPrompt({
-    homeCity: homeCity || "Unknown",
-    travelsFor: travelsFor || "general travel",
-    destinationType: destinationType || "any destination",
-    destination: q,
+    homeCity: sanitise(homeCity || "Unknown"),
+    travelsFor: sanitise(travelsFor || "general travel"),
+    destinationType: sanitise(destinationType || "any destination"),
+    destination: sanitise(q),
     dates: `${start} to ${end}`,
     flexibility: humaniseFlex(flex),
-    interests: travelsFor || "general sightseeing",
+    interests: sanitise(travelsFor || "general sightseeing"),
     budget: humaniseBudget(budget),
   });
 
@@ -170,16 +203,18 @@ export async function POST(request: Request) {
       signal: AbortSignal.timeout(90_000),
     });
   } catch (err) {
+    console.error("Anthropic API network error:", err);
     return NextResponse.json(
-      { error: `Failed to reach Anthropic API: ${err}` },
+      { error: "Could not reach the trip planning service. Please try again." },
       { status: 502 }
     );
   }
 
   if (!anthropicRes.ok) {
     const text = await anthropicRes.text();
+    console.error(`Anthropic API error ${anthropicRes.status}:`, text);
     return NextResponse.json(
-      { error: `Anthropic API error ${anthropicRes.status}: ${text}` },
+      { error: "The trip planning service returned an error. Please try again." },
       { status: 502 }
     );
   }
@@ -202,8 +237,9 @@ export async function POST(request: Request) {
   try {
     tripData = JSON.parse(extractJson(rawText));
   } catch (err) {
+    console.error("Failed to parse trip JSON:", err);
     return NextResponse.json(
-      { error: `Could not parse trip JSON from model response: ${err}` },
+      { error: "We received an unexpected response. Please try again." },
       { status: 502 }
     );
   }

@@ -1,7 +1,24 @@
 import { NextResponse } from "next/server";
 import { resolvePhoto } from "@/lib/photos/unsplash";
+import { getAuthenticatedUser } from "@/lib/apiAuth";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function GET(request: Request) {
+  // ── Auth ──
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // ── Rate limit: 60 photo lookups per user per hour ──
+  const { allowed } = rateLimit(`photos:${user.id}`, {
+    maxRequests: 60,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() ?? "";
   const seed = searchParams.get("seed")?.trim() ?? "default";
@@ -14,10 +31,7 @@ export async function GET(request: Request) {
   }
 
   if (!process.env.UNSPLASH_ACCESS_KEY) {
-    return NextResponse.json(
-      { error: "not_configured", message: "UNSPLASH_ACCESS_KEY is not set" },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
 
   try {
@@ -27,7 +41,7 @@ export async function GET(request: Request) {
     }
     return NextResponse.json(photo);
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: "upstream", message }, { status: 502 });
+    console.error("Unsplash photo lookup failed:", e);
+    return NextResponse.json({ error: "upstream" }, { status: 502 });
   }
 }

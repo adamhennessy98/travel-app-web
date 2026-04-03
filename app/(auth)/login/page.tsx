@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,18 +20,49 @@ export default function LoginPage() {
 
     const supabase = createClient();
 
-    const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
+    if (isSignUp) {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+      // If session is null, email confirmation is required
+      if (!data.session) {
+        setConfirmationSent(true);
+        setLoading(false);
+        return;
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
     }
 
     router.push("/");
     router.refresh();
+  }
+
+  if (confirmationSent) {
+    return (
+      <div className="w-full max-w-sm text-center">
+        <div className="text-4xl mb-4">📬</div>
+        <h2 className="text-xl font-extrabold text-text-primary mb-2">Check your email</h2>
+        <p className="text-text-secondary text-sm mb-6">
+          We sent a confirmation link to <span className="font-semibold text-text-primary">{email}</span>.
+          Click it to activate your account, then come back here to sign in.
+        </p>
+        <button
+          onClick={() => { setConfirmationSent(false); setIsSignUp(false); }}
+          className="text-primary font-semibold text-sm hover:underline"
+        >
+          Back to sign in
+        </button>
+      </div>
+    );
   }
 
   return (

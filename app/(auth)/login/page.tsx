@@ -4,6 +4,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+/** Supabase uses `invalid_credentials` for wrong password (and unknown email). */
+function formatSignInError(error: { message: string; code?: string }): string {
+  if (error.code === "invalid_credentials") {
+    return "Wrong password. Please try again.";
+  }
+  const m = error.message.toLowerCase();
+  if (
+    m.includes("invalid login credentials") ||
+    m.includes("invalid credentials")
+  ) {
+    return "Wrong password. Please try again.";
+  }
+  return error.message;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -36,7 +51,7 @@ export default function LoginPage() {
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        setError(error.message);
+        setError(formatSignInError(error));
         setLoading(false);
         return;
       }
@@ -100,10 +115,14 @@ export default function LoginPage() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
               required
               className="w-full bg-bg-page border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-placeholder outline-none focus:ring-2 focus:ring-primary/30"
               placeholder="••••••••"
+              autoComplete="current-password"
             />
           </div>
 

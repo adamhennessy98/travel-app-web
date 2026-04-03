@@ -29,4 +29,5 @@ body {
   background: var(--color-bg-page);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  overflow-x: hidden;
 }

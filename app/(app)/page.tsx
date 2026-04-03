@@ -53,10 +53,10 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center w-full min-w-0 px-0">
       {/* Hero */}
-      <div className="text-center mt-16 mb-12 max-w-2xl mx-auto">
-        <h1 className="font-serif text-5xl md:text-6xl font-bold text-text-primary leading-tight mb-6">
+      <div className="text-center mt-8 sm:mt-16 mb-8 sm:mb-12 max-w-2xl mx-auto px-1">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-text-primary leading-tight mb-6">
           Design your{" "}
           <span className="text-primary italic">perfect</span>
           <br />
@@ -68,8 +68,8 @@ export default function HomePage() {
       </div>
 
       {/* Search bar */}
-      <div className="w-full max-w-2xl">
-        <div className="flex items-center bg-surface rounded-2xl shadow-sm border border-border px-5 py-1 gap-3">
+      <div className="w-full max-w-2xl min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center bg-surface rounded-2xl shadow-sm border border-border px-4 sm:px-5 py-3 sm:py-1 gap-3 sm:gap-3">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5 text-text-placeholder shrink-0">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
@@ -84,7 +84,7 @@ export default function HomePage() {
           <button
             onClick={handleSubmit}
             disabled={!query.trim()}
-            className="flex items-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shrink-0"
+            className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-3 sm:py-2.5 rounded-xl transition-colors shrink-0 w-full sm:w-auto"
           >
             Search
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
@@ -94,7 +94,7 @@ export default function HomePage() {
         </div>
 
         {/* Suggestion chips */}
-        <div className="flex flex-wrap gap-2 mt-4 justify-center">
+        <div className="flex flex-wrap gap-2 mt-4 justify-center px-1">
           {SUGGESTIONS.map((s) => (
             <button
               key={s}
@@ -112,12 +112,12 @@ export default function HomePage() {
 
       {/* Last saved trip */}
       {lastTrip && (
-        <div className="w-full max-w-2xl mt-16">
-          <div className="flex items-center justify-between mb-4">
+        <div className="w-full max-w-2xl mt-12 sm:mt-16 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <h2 className="font-serif text-xl font-bold text-text-primary">
               Your last saved trip
             </h2>
-            <Link href="/saved" className="text-sm text-primary font-medium hover:underline">
+            <Link href="/saved" className="text-sm text-primary font-medium hover:underline shrink-0">
               View all saved trips →
             </Link>
           </div>
@@ -137,13 +137,13 @@ export default function HomePage() {
                   />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-4 left-5 right-5">
-                  <p className="font-serif text-2xl font-bold text-white leading-tight">
+                <div className="absolute bottom-4 left-4 right-4 sm:left-5 sm:right-5">
+                  <p className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight line-clamp-3">
                     {lastTrip.trip_headline}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-5 py-4">
                 <div>
                   {lastTrip.answers?.startDate && (
                     <p className="text-sm text-text-secondary">

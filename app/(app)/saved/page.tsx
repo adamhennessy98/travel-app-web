@@ -68,16 +68,16 @@ export default function SavedPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-serif text-4xl font-bold text-text-primary leading-tight">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-text-primary leading-tight">
           Your escapes
         </h1>
         <p className="text-text-secondary mt-1">{trips.length} saved {trips.length === 1 ? "trip" : "trips"}</p>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
         {trips.map((trip) => (
-          <Link key={trip.id} href={`/saved/${trip.id}`} className="group block">
+          <Link key={trip.id} href={`/saved/${trip.id}`} className="group block min-w-0">
             <div className="bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
               {/* Image */}
               <div className="relative h-48 overflow-hidden">

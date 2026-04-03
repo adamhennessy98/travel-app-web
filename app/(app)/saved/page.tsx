@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { SavedHeroImage } from "@/components/TravelPhoto";
 
 interface SavedTripRow {
   id: string;
@@ -11,6 +12,13 @@ interface SavedTripRow {
   estimated_total: number;
   answers: { startDate: string; endDate: string };
   saved_at: string;
+  hero_image_url?: string | null;
+  hero_image_thumb_url?: string | null;
+  hero_image_attribution?: {
+    photographerName: string;
+    photographerUrl: string;
+    unsplashPhotoPageUrl: string;
+  } | null;
 }
 
 export default function SavedPage() {
@@ -45,7 +53,7 @@ export default function SavedPage() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
         </svg>
         <div>
-          <p className="font-bold text-text-primary text-lg">No saved trips yet</p>
+          <p className="font-serif text-2xl font-bold text-text-primary">No saved trips yet</p>
           <p className="text-text-secondary text-sm mt-1">Save a trip from results to see it here.</p>
         </div>
         <Link
@@ -59,30 +67,50 @@ export default function SavedPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-3xl font-extrabold text-text-primary mb-8">Saved trips</h1>
-      <div className="space-y-3">
+    <div>
+      <div className="mb-8">
+        <h1 className="font-serif text-4xl font-bold text-text-primary leading-tight">
+          Your escapes
+        </h1>
+        <p className="text-text-secondary mt-1">{trips.length} saved {trips.length === 1 ? "trip" : "trips"}</p>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {trips.map((trip) => (
-          <Link
-            key={trip.id}
-            href={`/saved/${trip.id}`}
-            className="flex items-center justify-between bg-surface border border-border rounded-2xl px-5 py-4 hover:border-primary/40 hover:shadow-sm transition-all group"
-          >
-            <div className="min-w-0">
-              <p className="font-bold text-text-primary truncate">{trip.destination_label}</p>
-              <p className="text-sm text-text-secondary mt-0.5">
-                {trip.answers?.startDate && trip.answers?.endDate
-                  ? `${trip.answers.startDate} – ${trip.answers.endDate}`
-                  : "Dates TBC"}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 shrink-0 ml-4">
-              <p className="text-primary font-extrabold">
-                €{Math.round(trip.estimated_total)}
-              </p>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors">
-                <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-              </svg>
+          <Link key={trip.id} href={`/saved/${trip.id}`} className="group block">
+            <div className="bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
+              {/* Image */}
+              <div className="relative h-48 overflow-hidden">
+                <div className="absolute inset-0 overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                  <SavedHeroImage
+                    heroUrl={trip.hero_image_url ?? trip.hero_image_thumb_url}
+                    heroAttribution={trip.hero_image_attribution}
+                    fallbackQuery={trip.destination_label}
+                    seed={trip.id}
+                    alt={trip.destination_label}
+                    className="h-full w-full"
+                    showAttribution
+                  />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <p className="font-serif text-xl font-bold text-white leading-tight">
+                    {trip.trip_headline}
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <p className="text-sm text-text-secondary">
+                  {trip.answers?.startDate
+                    ? `${trip.answers.startDate} – ${trip.answers.endDate}`
+                    : "Dates TBC"}
+                </p>
+                <p className="font-extrabold text-primary">
+                  €{Math.round(trip.estimated_total)}
+                </p>
+              </div>
             </div>
           </Link>
         ))}

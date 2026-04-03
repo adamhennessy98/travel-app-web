@@ -68,7 +68,7 @@ export default function LoginPage() {
   return (
     <div className="w-full max-w-sm">
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-extrabold text-primary tracking-tight">
+        <h1 className="font-serif text-3xl font-bold text-primary">
           YourWeekend
         </h1>
         <p className="text-text-secondary text-sm mt-1">

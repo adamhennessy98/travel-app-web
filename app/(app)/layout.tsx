@@ -1,10 +1,12 @@
-import Sidebar from "@/components/Sidebar";
+import TopNav from "@/components/TopNav";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8">{children}</main>
+    <div className="min-h-screen flex flex-col">
+      <TopNav />
+      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-10">
+        {children}
+      </main>
     </div>
   );
 }

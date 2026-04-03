@@ -5,14 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { flightSearchUrl, hotelSearchUrl, activitySearchUrl } from "@/lib/bookingUrls";
 import type { TripResult, FlightOffer, HotelOffer, Activity } from "@/types/trip";
+import { TravelPhoto } from "@/components/TravelPhoto";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StarRating({ count }: { count: number }) {
   return (
     <span className="text-yellow-400 text-sm">
-      {"★".repeat(count)}
-      {"☆".repeat(Math.max(0, 5 - count))}
+      {"★".repeat(count)}{"☆".repeat(Math.max(0, 5 - count))}
     </span>
   );
 }
@@ -28,118 +28,136 @@ function BestPickBadge({ reason }: { reason: string }) {
   );
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-3">
-      {children}
-    </h2>
-  );
-}
-
-// ─── Cards ────────────────────────────────────────────────────────────────────
+// ─── Flight Card ──────────────────────────────────────────────────────────────
 
 function FlightCard({
-  flight,
-  selected,
-  onSelect,
-  departDate,
+  flight, selected, onSelect, departDate,
 }: {
-  flight: FlightOffer;
-  selected: boolean;
-  onSelect: () => void;
-  departDate: string;
+  flight: FlightOffer; selected: boolean; onSelect: () => void; departDate: string;
 }) {
   const bookUrl = flightSearchUrl(flight.origin, flight.destination, departDate);
   return (
     <div
       onClick={onSelect}
-      className={`bg-surface rounded-2xl border p-5 space-y-3 cursor-pointer transition-all ${
-        selected ? "border-primary ring-2 ring-primary/20" : flight.isBestPick ? "border-primary/40" : "border-border"
+      className={`bg-surface rounded-2xl border p-5 cursor-pointer transition-all space-y-3 ${
+        selected ? "border-primary ring-2 ring-primary/20 shadow-md" : "border-border hover:border-primary/40 hover:shadow-sm"
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="font-bold text-text-primary">{flight.airline}</p>
-          <p className="text-sm text-text-secondary mt-0.5">
-            {flight.origin} → {flight.destination}
-          </p>
+      {/* Selection indicator */}
+      <div className="flex items-center justify-between">
+        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${selected ? "border-primary bg-primary" : "border-border"}`}>
+          {selected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
         </div>
-        <p className="text-lg font-extrabold text-text-primary shrink-0">
+        <p className="text-xl font-extrabold text-text-primary">
           {flight.currency} {flight.price}
         </p>
       </div>
-      <div className="flex gap-4 text-sm text-text-secondary flex-wrap">
+
+      <div>
+        <p className="font-bold text-text-primary">{flight.airline}</p>
+        <p className="text-sm text-text-secondary mt-0.5">
+          {flight.origin} → {flight.destination}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-text-secondary">
         <span>{flight.departureTime} – {flight.arrivalTime}</span>
-        <span>·</span>
+        <span className="text-border">·</span>
         <span>{flight.duration}</span>
-        <span>·</span>
+        <span className="text-border">·</span>
         <span>{flight.stops === 0 ? "Direct" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</span>
       </div>
+
       {flight.isBestPick && flight.bestPickReason && (
         <BestPickBadge reason={flight.bestPickReason} />
       )}
+
       <a
         href={bookUrl}
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="inline-block text-sm font-semibold text-primary hover:underline"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
       >
-        Search on Skyscanner →
+        Search Skyscanner
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+          <path fillRule="evenodd" d="M4.22 11.78a.75.75 0 010-1.06L9.44 5.5H5.75a.75.75 0 010-1.5h5.5a.75.75 0 01.75.75v5.5a.75.75 0 01-1.5 0V6.56l-5.22 5.22a.75.75 0 01-1.06 0z" clipRule="evenodd" />
+        </svg>
       </a>
     </div>
   );
 }
 
+// ─── Hotel Card ───────────────────────────────────────────────────────────────
+
 function HotelCard({
-  hotel,
-  selected,
-  onSelect,
-  checkin,
-  checkout,
+  hotel, selected, onSelect, checkin, checkout, destination, photoSeed,
 }: {
-  hotel: HotelOffer;
-  selected: boolean;
-  onSelect: () => void;
-  checkin: string;
-  checkout: string;
+  hotel: HotelOffer; selected: boolean; onSelect: () => void;
+  checkin: string; checkout: string; destination: string;
+  photoSeed: string;
 }) {
   const bookUrl = hotelSearchUrl(hotel.name, checkin, checkout);
+  const imgKeyword = `${hotel.neighbourhood} ${destination}`;
   return (
     <div
       onClick={onSelect}
-      className={`bg-surface rounded-2xl border p-5 space-y-3 cursor-pointer transition-all ${
-        selected ? "border-primary ring-2 ring-primary/20" : hotel.isBestPick ? "border-primary/40" : "border-border"
+      className={`bg-surface rounded-2xl border overflow-hidden cursor-pointer transition-all ${
+        selected ? "border-primary ring-2 ring-primary/20 shadow-md" : "border-border hover:border-primary/40 hover:shadow-sm"
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="font-bold text-text-primary">{hotel.name}</p>
-          <p className="text-sm text-text-secondary mt-0.5">{hotel.neighbourhood}</p>
+      {/* Image */}
+      <div className="relative h-40 overflow-hidden">
+        <TravelPhoto
+          query={imgKeyword}
+          seed={photoSeed}
+          alt={hotel.neighbourhood}
+          className="absolute inset-0"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        {/* Selection dot */}
+        <div className={`absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${selected ? "border-white bg-primary" : "border-white/70 bg-black/20"}`}>
+          {selected && <div className="w-2 h-2 rounded-full bg-white" />}
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-lg font-extrabold text-text-primary">
-            {hotel.currency} {hotel.pricePerNight}
-          </p>
-          <p className="text-xs text-text-secondary">per night</p>
-        </div>
+        <p className="absolute bottom-3 left-4 text-white text-xs font-semibold uppercase tracking-widest">
+          {hotel.neighbourhood}
+        </p>
       </div>
-      <StarRating count={hotel.starRating} />
-      {hotel.isBestPick && hotel.bestPickReason && (
-        <BestPickBadge reason={hotel.bestPickReason} />
-      )}
-      <a
-        href={bookUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()}
-        className="inline-block text-sm font-semibold text-primary hover:underline"
-      >
-        Search on Booking.com →
-      </a>
+
+      {/* Body */}
+      <div className="p-4 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-bold text-text-primary leading-snug">{hotel.name}</p>
+          <div className="text-right shrink-0">
+            <p className="font-extrabold text-text-primary">{hotel.currency} {hotel.pricePerNight}</p>
+            <p className="text-xs text-text-secondary">/ night</p>
+          </div>
+        </div>
+
+        <StarRating count={hotel.starRating} />
+
+        {hotel.isBestPick && hotel.bestPickReason && (
+          <BestPickBadge reason={hotel.bestPickReason} />
+        )}
+
+        <a
+          href={bookUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+        >
+          Search Booking.com
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+            <path fillRule="evenodd" d="M4.22 11.78a.75.75 0 010-1.06L9.44 5.5H5.75a.75.75 0 010-1.5h5.5a.75.75 0 01.75.75v5.5a.75.75 0 01-1.5 0V6.56l-5.22 5.22a.75.75 0 01-1.06 0z" clipRule="evenodd" />
+          </svg>
+        </a>
+      </div>
     </div>
   );
 }
+
+// ─── Activity Card ────────────────────────────────────────────────────────────
 
 function ActivityCard({ activity, destination }: { activity: Activity; destination: string }) {
   const mapsUrl = activitySearchUrl(activity.name, destination);
@@ -156,10 +174,39 @@ function ActivityCard({ activity, destination }: { activity: Activity; destinati
         href={mapsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-block text-sm font-semibold text-primary hover:underline"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
       >
-        Find on Google Maps →
+        Find on Google Maps
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
+          <path fillRule="evenodd" d="M4.22 11.78a.75.75 0 010-1.06L9.44 5.5H5.75a.75.75 0 010-1.5h5.5a.75.75 0 01.75.75v5.5a.75.75 0 01-1.5 0V6.56l-5.22 5.22a.75.75 0 01-1.06 0z" clipRule="evenodd" />
+        </svg>
       </a>
+    </div>
+  );
+}
+
+// ─── Loading State ────────────────────────────────────────────────────────────
+
+function LoadingState({ query }: { query: string }) {
+  return (
+    <div
+      className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] relative flex flex-col items-center justify-center overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)" }}
+    >
+      {/* Subtle dot pattern */}
+      <div className="absolute inset-0 opacity-10"
+        style={{ backgroundImage: "radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+
+      <div className="relative z-10 flex flex-col items-center gap-5 text-center px-6">
+        <div className="w-12 h-12 border-4 border-white/70 border-t-white rounded-full animate-spin" />
+        <div>
+          <p className="text-white/50 text-sm font-medium uppercase tracking-widest mb-2">Planning your escape</p>
+          <h2 className="font-serif text-4xl font-bold text-white">{query}</h2>
+        </div>
+        <p className="text-white/50 text-sm max-w-xs">
+          Finding flights, hotels, and hand-picked experiences just for you…
+        </p>
+      </div>
     </div>
   );
 }
@@ -172,9 +219,11 @@ function ResultsContent() {
   const [trip, setTrip] = useState<TripResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
   const startDate = searchParams.get("start") ?? "";
   const endDate = searchParams.get("end") ?? "";
   const rawQuery = searchParams.get("q") ?? "";
+
   const [selectedFlightIdx, setSelectedFlightIdx] = useState<number | null>(null);
   const [selectedHotelIdx, setSelectedHotelIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -195,7 +244,6 @@ function ResultsContent() {
           .select("home_city, favourite_travel_reasons, favourite_destination_type")
           .eq("id", user.id)
           .single();
-
         if (prefs) {
           homeCity = prefs.home_city ?? "";
           travelsFor = (prefs.favourite_travel_reasons as string[] ?? []).join(", ");
@@ -203,28 +251,25 @@ function ResultsContent() {
         }
       }
 
-      const params = {
-        q: searchParams.get("q") ?? "",
-        start: searchParams.get("start") ?? "",
-        end: searchParams.get("end") ?? "",
-        flex: searchParams.get("flex") ?? "",
-        budget: searchParams.get("budget") ?? "",
-        homeCity,
-        travelsFor,
-        destinationType,
-      };
-
       fetch("/api/trip", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(params),
+        body: JSON.stringify({
+          q: searchParams.get("q") ?? "",
+          start: searchParams.get("start") ?? "",
+          end: searchParams.get("end") ?? "",
+          flex: searchParams.get("flex") ?? "",
+          budget: searchParams.get("budget") ?? "",
+          homeCity,
+          travelsFor,
+          destinationType,
+        }),
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.error) throw new Error(data.error);
           const result = data as TripResult;
           setTrip(result);
-          // Pre-select best picks
           setSelectedFlightIdx(result.flights.findIndex((f) => f.isBestPick) ?? 0);
           setSelectedHotelIdx(result.hotels.findIndex((h) => h.isBestPick) ?? 0);
         })
@@ -246,45 +291,59 @@ function ResultsContent() {
     const hotel = trip.hotels[selectedHotelIdx];
     const start = searchParams.get("start") ?? "";
     const end = searchParams.get("end") ?? "";
-
-    // Calculate nights for total estimate
     const nights = start && end
       ? Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000))
       : 1;
     const estimatedTotal = flight.price + hotel.pricePerNight * nights;
 
-    const rawQuery = searchParams.get("q") ?? "";
-    const destinationLabel = trip.tripHeadline || rawQuery;
+    const photoQuery = rawQuery || trip.tripHeadline || "travel";
+    let hero_image_url: string | null = null;
+    let hero_image_thumb_url: string | null = null;
+    let hero_image_attribution: Record<string, string> | null = null;
+    try {
+      const photoRes = await fetch(
+        `/api/photos/search?q=${encodeURIComponent(photoQuery)}&seed=${encodeURIComponent(trip.tripHeadline || rawQuery || "save")}`,
+      );
+      if (photoRes.ok) {
+        const p = (await photoRes.json()) as {
+          url: string;
+          thumbUrl: string;
+          attribution: Record<string, string>;
+        };
+        if (p?.url) {
+          hero_image_url = p.url;
+          hero_image_thumb_url = p.thumbUrl ?? null;
+          hero_image_attribution = p.attribution ?? null;
+        }
+      }
+    } catch {
+      /* hero image optional */
+    }
 
     await supabase.from("saved_trips").insert({
       user_id: user.id,
-      destination_label: destinationLabel,
+      destination_label: trip.tripHeadline || rawQuery,
       raw_query: rawQuery,
-      answers: {
-        startDate: start,
-        endDate: end,
-        flexibility: searchParams.get("flex"),
-        budget: searchParams.get("budget"),
-      },
+      answers: { startDate: start, endDate: end, flexibility: searchParams.get("flex"), budget: searchParams.get("budget") },
       flight,
       hotel,
       estimated_total: estimatedTotal,
       trip_headline: trip.tripHeadline,
       curator_payload: trip,
+      ...(hero_image_url
+        ? {
+            hero_image_url,
+            hero_image_thumb_url,
+            hero_image_attribution,
+          }
+        : {}),
     });
 
     setSaving(false);
     setSaved(true);
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-text-secondary text-sm">Planning your trip…</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState query={rawQuery} />;
 
   if (error) {
     return (
@@ -300,92 +359,114 @@ function ResultsContent() {
   if (!trip) return null;
 
   return (
-    <div className="max-w-3xl space-y-10">
-      {/* Headline + save */}
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <p className="text-xs font-bold tracking-widest text-text-accent uppercase mb-2">
-            Your trip
-          </p>
-          <h1 className="text-3xl font-extrabold text-text-primary leading-tight">
-            {trip.tripHeadline}
-          </h1>
+    <div className="space-y-10">
+      {/* ── Hero ── */}
+      <div className="-mx-6 -mt-10 relative h-72 lg:h-96 overflow-hidden">
+        <TravelPhoto
+          query={rawQuery}
+          seed={`hero-${trip.tripHeadline}`}
+          alt={rawQuery}
+          className="absolute inset-0 z-0"
+          priority
+          showAttribution
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+        {/* Trip headline */}
+        <div className="absolute bottom-0 left-0 right-0 px-6 pb-8 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Your trip</p>
+            <h1 className="font-serif text-3xl lg:text-4xl font-bold text-white leading-tight max-w-xl">
+              {trip.tripHeadline}
+            </h1>
+            {startDate && endDate && (
+              <p className="text-white/70 text-sm mt-2">{startDate} – {endDate}</p>
+            )}
+          </div>
+          <button
+            onClick={saved ? () => router.push("/saved") : handleSave}
+            disabled={saving}
+            className={`shrink-0 flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full transition-colors ${
+              saved
+                ? "bg-green-500 text-white"
+                : "bg-white hover:bg-white/90 disabled:opacity-50 text-text-primary"
+            }`}
+          >
+            {saved ? (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                </svg>
+                Saved — view trips
+              </>
+            ) : saving ? "Saving…" : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                </svg>
+                Save trip
+              </>
+            )}
+          </button>
         </div>
-        <button
-          onClick={saved ? () => router.push("/saved") : handleSave}
-          disabled={saving}
-          className={`shrink-0 flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full transition-colors ${
-            saved
-              ? "bg-green-500 text-white"
-              : "bg-primary hover:bg-primary-hover disabled:opacity-50 text-white"
-          }`}
-        >
-          {saved ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-              </svg>
-              Saved — view trips
-            </>
-          ) : saving ? (
-            "Saving…"
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-              </svg>
-              Save trip
-            </>
-          )}
-        </button>
       </div>
 
-      {/* Flights */}
-      <section>
-        <SectionHeading>Flights — click to select</SectionHeading>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {trip.flights.map((f, i) => (
-            <FlightCard
-              key={i}
-              flight={f}
-              selected={selectedFlightIdx === i}
-              onSelect={() => setSelectedFlightIdx(i)}
-              departDate={startDate}
-            />
-          ))}
-        </div>
-      </section>
+      {/* ── Flights + Hotels side by side ── */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Flights */}
+        <section>
+          <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">
+            Flights — select one
+          </h2>
+          <div className="space-y-3">
+            {trip.flights.map((f, i) => (
+              <FlightCard
+                key={i}
+                flight={f}
+                selected={selectedFlightIdx === i}
+                onSelect={() => setSelectedFlightIdx(i)}
+                departDate={startDate}
+              />
+            ))}
+          </div>
+        </section>
 
-      {/* Hotels */}
-      <section>
-        <SectionHeading>Where to stay — click to select</SectionHeading>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {trip.hotels.map((h, i) => (
-            <HotelCard
-              key={i}
-              hotel={h}
-              selected={selectedHotelIdx === i}
-              onSelect={() => setSelectedHotelIdx(i)}
-              checkin={startDate}
-              checkout={endDate}
-            />
-          ))}
-        </div>
-      </section>
+        {/* Hotels */}
+        <section>
+          <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">
+            Where to stay — select one
+          </h2>
+          <div className="space-y-3">
+            {trip.hotels.map((h, i) => (
+              <HotelCard
+                key={i}
+                hotel={h}
+                selected={selectedHotelIdx === i}
+                onSelect={() => setSelectedHotelIdx(i)}
+                checkin={startDate}
+                checkout={endDate}
+                destination={rawQuery}
+                photoSeed={`hotel-${i}-${h.neighbourhood}-${h.name}`}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
 
-      {/* Must dos */}
+      {/* ── Activities ── */}
       <section>
-        <SectionHeading>Must dos</SectionHeading>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">Must dos</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {trip.mustDos.map((a, i) => (
             <ActivityCard key={i} activity={a} destination={rawQuery} />
           ))}
         </div>
       </section>
 
-      {/* While you're there */}
       <section>
-        <SectionHeading>While you&apos;re there</SectionHeading>
+        <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">
+          While you&apos;re there
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {trip.whileYoureThere.map((a, i) => (
             <ActivityCard key={i} activity={a} destination={rawQuery} />

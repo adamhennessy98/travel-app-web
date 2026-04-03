@@ -74,7 +74,15 @@ function ClarifyingContent() {
 
   return (
     // Break out of parent padding to go full-bleed
-    <div className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] flex overflow-hidden">
+    <div className="-mx-4 sm:-mx-6 -mt-6 sm:-mt-10 -mb-6 sm:-mb-10 min-h-[calc(100dvh-3.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col lg:flex-row lg:h-[calc(100dvh-4rem)] overflow-hidden">
+
+      {/* Mobile: destination context (desktop uses illustration panel) */}
+      <div className="lg:hidden shrink-0 border-b border-border bg-surface px-4 py-3">
+        <p className="text-text-secondary text-xs font-bold uppercase tracking-widest">Your destination</p>
+        <p className="font-serif text-lg font-bold text-text-primary leading-snug mt-0.5 line-clamp-3 break-words">
+          {rawQuery || "Your trip"}
+        </p>
+      </div>
 
       {/* ── Left: destination panel ── */}
       <div className="hidden lg:flex lg:w-[55%] relative h-full min-h-0 flex-col justify-end">
@@ -103,9 +111,9 @@ function ClarifyingContent() {
       </div>
 
       {/* ── Right: questions panel ── */}
-      <div className="flex-1 lg:w-[45%] flex flex-col bg-surface overflow-y-auto">
+      <div className="flex-1 lg:w-[45%] flex flex-col bg-surface overflow-y-auto min-h-0 min-w-0">
         {/* Progress */}
-        <div className="px-10 pt-10 pb-6 border-b border-border shrink-0">
+        <div className="px-4 sm:px-6 lg:px-10 pt-6 sm:pt-10 pb-4 sm:pb-6 border-b border-border shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-text-secondary uppercase tracking-widest">
               Step {step + 1} of 3
@@ -123,7 +131,7 @@ function ClarifyingContent() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 px-10 py-8 flex flex-col gap-6">
+        <div className="flex-1 px-4 sm:px-6 lg:px-10 py-6 sm:py-8 flex flex-col gap-6">
           {/* Previous answers */}
           {answers.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -151,8 +159,8 @@ function ClarifyingContent() {
           {/* Step 0 — Dates */}
           {step === 0 && (
             <div className="flex flex-col gap-4">
-              <div className="flex gap-3">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 min-w-0">
                   <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">
                     From
                   </label>
@@ -164,7 +172,7 @@ function ClarifyingContent() {
                     className="w-full bg-bg-page border border-border rounded-xl px-4 py-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                   />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">
                     To
                   </label>

@@ -169,7 +169,7 @@ export default function SavedTripDetailPage() {
   return (
     <div className="space-y-10">
       {/* ── Hero ── */}
-      <div className="-mx-6 -mt-10 relative h-64 lg:h-80 overflow-hidden">
+      <div className="-mx-4 sm:-mx-6 -mt-6 sm:-mt-10 relative h-56 sm:h-64 lg:h-80 overflow-hidden">
         <SavedHeroImage
           heroUrl={trip.hero_image_url}
           heroAttribution={trip.hero_image_attribution}
@@ -181,18 +181,18 @@ export default function SavedTripDetailPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-7 flex items-end justify-between gap-4">
-          <div>
+        <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 pb-6 sm:pb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1">
             <Link href="/saved" className="inline-flex items-center gap-1 text-white/60 hover:text-white text-xs font-semibold mb-3 transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
                 <path fillRule="evenodd" d="M11.78 4.22a.75.75 0 010 1.06L7.06 10h3.69a.75.75 0 010 1.5h-5.5a.75.75 0 01-.75-.75v-5.5a.75.75 0 011.5 0v3.69l4.72-4.72a.75.75 0 011.06 0z" clipRule="evenodd" />
               </svg>
               Your escapes
             </Link>
-            <h1 className="font-serif text-3xl lg:text-4xl font-bold text-white leading-tight max-w-xl">
+            <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight max-w-xl break-words">
               {trip.trip_headline}
             </h1>
-            <div className="flex items-center gap-4 mt-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
               {trip.answers?.startDate && (
                 <p className="text-white/70 text-sm">{trip.answers.startDate} – {trip.answers.endDate}</p>
               )}
@@ -200,9 +200,10 @@ export default function SavedTripDetailPage() {
             </div>
           </div>
           <button
+            type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="shrink-0 text-sm font-semibold text-white/60 hover:text-red-400 disabled:opacity-50 transition-colors"
+            className="shrink-0 self-start sm:self-auto text-sm font-semibold text-white/60 hover:text-red-400 disabled:opacity-50 transition-colors"
           >
             {deleting ? "Removing…" : "Remove"}
           </button>

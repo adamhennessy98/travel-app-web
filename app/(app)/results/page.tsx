@@ -19,7 +19,7 @@ function StarRating({ count }: { count: number }) {
 
 function BestPickBadge({ reason }: { reason: string }) {
   return (
-    <div className="flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 rounded-full w-fit">
+    <div className="flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 rounded-full w-fit max-w-full break-words">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3 h-3">
         <path fillRule="evenodd" d="M8 1.75a.75.75 0 01.692.462l1.41 3.393 3.664.293a.75.75 0 01.428 1.317l-2.791 2.39.853 3.575a.75.75 0 01-1.12.814L8 11.82l-3.136 1.974a.75.75 0 01-1.12-.814l.852-3.574-2.79-2.39a.75.75 0 01.427-1.318l3.663-.293 1.41-3.393A.75.75 0 018 1.75z" clipRule="evenodd" />
       </svg>
@@ -190,18 +190,18 @@ function ActivityCard({ activity, destination }: { activity: Activity; destinati
 function LoadingState({ query }: { query: string }) {
   return (
     <div
-      className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] relative flex flex-col items-center justify-center overflow-hidden"
+      className="-mx-4 sm:-mx-6 -mt-6 sm:-mt-10 -mb-6 sm:-mb-10 min-h-[calc(100dvh-3.5rem)] sm:min-h-[calc(100dvh-4rem)] relative flex flex-col items-center justify-center overflow-hidden px-4"
       style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)" }}
     >
       {/* Subtle dot pattern */}
       <div className="absolute inset-0 opacity-10"
         style={{ backgroundImage: "radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
-      <div className="relative z-10 flex flex-col items-center gap-5 text-center px-6">
-        <div className="w-12 h-12 border-4 border-white/70 border-t-white rounded-full animate-spin" />
-        <div>
+      <div className="relative z-10 flex flex-col items-center gap-5 text-center px-2 sm:px-6 max-w-lg w-full">
+        <div className="w-12 h-12 border-4 border-white/70 border-t-white rounded-full animate-spin shrink-0" />
+        <div className="min-w-0 w-full">
           <p className="text-white/50 text-sm font-medium uppercase tracking-widest mb-2">Planning your escape</p>
-          <h2 className="font-serif text-4xl font-bold text-white">{query}</h2>
+          <h2 className="font-serif text-2xl sm:text-4xl font-bold text-white break-words">{query}</h2>
         </div>
         <p className="text-white/50 text-sm max-w-xs">
           Finding flights, hotels, and hand-picked experiences just for you…
@@ -361,7 +361,7 @@ function ResultsContent() {
   return (
     <div className="space-y-10">
       {/* ── Hero ── */}
-      <div className="-mx-6 -mt-10 relative h-72 lg:h-96 overflow-hidden">
+      <div className="-mx-4 sm:-mx-6 -mt-6 sm:-mt-10 relative h-56 sm:h-72 lg:h-96 overflow-hidden">
         <TravelPhoto
           query={rawQuery}
           seed={`hero-${trip.tripHeadline}`}
@@ -373,10 +373,10 @@ function ResultsContent() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
         {/* Trip headline */}
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-8 flex items-end justify-between gap-4">
-          <div>
+        <div className="absolute bottom-0 left-0 right-0 px-4 sm:px-6 pb-6 sm:pb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1">
             <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Your trip</p>
-            <h1 className="font-serif text-3xl lg:text-4xl font-bold text-white leading-tight max-w-xl">
+            <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight max-w-xl break-words">
               {trip.tripHeadline}
             </h1>
             {startDate && endDate && (
@@ -384,9 +384,10 @@ function ResultsContent() {
             )}
           </div>
           <button
+            type="button"
             onClick={saved ? () => router.push("/saved") : handleSave}
             disabled={saving}
-            className={`shrink-0 flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full transition-colors ${
+            className={`shrink-0 flex items-center justify-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full transition-colors w-full sm:w-auto ${
               saved
                 ? "bg-green-500 text-white"
                 : "bg-white hover:bg-white/90 disabled:opacity-50 text-text-primary"
@@ -394,14 +395,14 @@ function ResultsContent() {
           >
             {saved ? (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
                   <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
                 </svg>
-                Saved — view trips
+                <span className="truncate">Saved — view trips</span>
               </>
             ) : saving ? "Saving…" : (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
                   <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
                 </svg>
                 Save trip

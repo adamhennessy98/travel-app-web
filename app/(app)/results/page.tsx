@@ -185,7 +185,7 @@ function HotelCard({ hotel, selected, onSelect, checkin, checkout, destination }
       className={`bg-surface rounded-2xl border overflow-hidden cursor-pointer transition-all ${selected ? "border-primary ring-2 ring-primary/20 shadow-md" : "border-border hover:border-primary/40"}`}>
       <div className="relative h-36 overflow-hidden">
         <img
-          src="/city-placeholder.jpg"
+          src="/hotel-headers.png"
           alt={hotel.neighbourhood}
           className="absolute inset-0 w-full h-full object-cover object-center"
         />

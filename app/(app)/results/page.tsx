@@ -157,6 +157,11 @@ function FlightCard({ flight, selected, onSelect, departDate }: {
         <span>·</span><span>{flight.duration}</span>
         <span>·</span><span>{flight.stops === 0 ? "Direct" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</span>
       </div>
+      {flight.layovers && flight.layovers.length > 0 && (
+        <p className="text-xs text-text-secondary">
+          Via {flight.layovers.map((l) => `${l.city} · ${l.duration} layover`).join(" → ")}
+        </p>
+      )}
       {flight.isBestPick && flight.bestPickReason && (
         <div className="flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 rounded-full w-fit">
           ⭐ Best pick — {flight.bestPickReason}

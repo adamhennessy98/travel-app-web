@@ -17,6 +17,12 @@ export interface ClarifyingAnswers {
 
 // ─── Flights & Hotels (kept for backward compat) ─────────────────────────────
 
+export interface FlightLayover {
+  airport: string;   // IATA code e.g. "DXB"
+  city: string;      // e.g. "Dubai"
+  duration: string;  // e.g. "2h 15m"
+}
+
 export interface FlightOffer {
   airline: string;
   origin: string;
@@ -25,6 +31,7 @@ export interface FlightOffer {
   arrivalTime: string;
   duration: string;
   stops: number;
+  layovers: FlightLayover[];   // empty [] for direct flights
   price: number;
   currency: string;
   bookingUrl: string;

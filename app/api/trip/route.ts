@@ -59,6 +59,7 @@ Return a JSON object matching this schema EXACTLY:
       "arrivalTime": "HH:MM",
       "duration": "Xh Ym",
       "stops": 0,
+      "layovers": [{ "airport": "IATA", "city": "City name", "duration": "Xh Ym" }],
       "price": 0,
       "currency": "EUR",
       "bookingUrl": "",
@@ -107,6 +108,7 @@ Return a JSON object matching this schema EXACTLY:
 
 RULES:
 - Return exactly 2 flights. Mark exactly 1 isBestPick true. The other false, bestPickReason "".
+- layovers: empty array [] for direct flights. For connecting flights, one entry per stop with real airport IATA, city name, and realistic layover duration.
 - Return exactly 2 hotels. Mark exactly 1 isBestPick true. The other false, bestPickReason "".
 - Return exactly ${params.numDays} day objects.
 - Each day has exactly 3 timeBlocks: morning activity, lunch restaurant, dinner restaurant.

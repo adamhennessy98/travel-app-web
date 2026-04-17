@@ -135,6 +135,9 @@ export default function SavedTripDetailPage() {
   const [trip, setTrip] = useState<SavedTripDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -152,6 +155,30 @@ export default function SavedTripDetailPage() {
     const supabase = createClient();
     await supabase.from("saved_trips").delete().eq("id", id);
     router.push("/saved");
+  }
+
+  async function handleShare() {
+    if (shareUrl) {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+    setSharing(true);
+    const res = await fetch("/api/trip/share", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tripId: id }),
+    });
+    const data = await res.json();
+    if (data.shareId) {
+      const url = `${window.location.origin}/trip/${data.shareId}`;
+      setShareUrl(url);
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    setSharing(false);
   }
 
   if (loading) {
@@ -199,14 +226,38 @@ export default function SavedTripDetailPage() {
               <p className="text-white font-extrabold">Est. €{Math.round(trip.estimated_total)}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="shrink-0 self-start sm:self-auto text-sm font-semibold text-white/60 hover:text-red-400 disabled:opacity-50 transition-colors"
-          >
-            {deleting ? "Removing…" : "Remove"}
-          </button>
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={sharing}
+              className="flex items-center gap-2 text-sm font-semibold bg-white/10 hover:bg-white/20 text-white disabled:opacity-50 px-4 py-2 rounded-full backdrop-blur-sm transition-colors"
+            >
+              {copied ? (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                  </svg>
+                  Copied!
+                </>
+              ) : sharing ? "Generating…" : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                    <path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .792l6.733 3.367a2.5 2.5 0 11-.671 1.341l-6.733-3.367a2.5 2.5 0 110-3.475l6.733-3.366A2.52 2.52 0 0113 4.5z" />
+                  </svg>
+                  Share
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-sm font-semibold text-white/60 hover:text-red-400 disabled:opacity-50 transition-colors"
+            >
+              {deleting ? "Removing…" : "Remove"}
+            </button>
+          </div>
         </div>
       </div>
 

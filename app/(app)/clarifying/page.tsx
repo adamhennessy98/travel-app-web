@@ -181,7 +181,7 @@ function ClarifyingContent() {
       {/* ── Left panel ── */}
       <div className="hidden lg:flex lg:w-[55%] relative h-full min-h-0 flex-col justify-end">
         <img
-          src="/Vintage travel excitement at the airport.png"
+          src="/Firefly_coast.png"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
         />

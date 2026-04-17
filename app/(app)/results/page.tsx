@@ -412,9 +412,14 @@ function ResultsContent() {
         </div>
       </div>
 
+<<<<<<< Updated upstream
       {/* ── Flights + Hotels side by side ── */}
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Flights */}
+=======
+      {/* ── Flights (hidden for local trips or when none returned) ── */}
+      {!isLocal && !trip.isLocal && trip.flights.length > 0 && trip.flights.some(f => f.price > 0) && (
+>>>>>>> Stashed changes
         <section>
           <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">
             Flights — select one
@@ -432,7 +437,12 @@ function ResultsContent() {
           </div>
         </section>
 
+<<<<<<< Updated upstream
         {/* Hotels */}
+=======
+      {/* ── Hotels (hidden for local trips) ── */}
+      {!isLocal && !trip.isLocal && trip.hotels.length > 0 && (
+>>>>>>> Stashed changes
         <section>
           <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">
             Where to stay — select one

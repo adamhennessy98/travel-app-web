@@ -233,7 +233,7 @@ export async function POST(request: Request) {
     .map((b: { text: string }) => b.text)
     .join("");
 
-  let tripData: unknown;
+  let tripData: Record<string, unknown>;
   try {
     tripData = JSON.parse(extractJson(rawText));
   } catch (err) {
@@ -242,6 +242,14 @@ export async function POST(request: Request) {
       { error: "We received an unexpected response. Please try again." },
       { status: 502 }
     );
+  }
+
+  // Guarantee local trips never have flights or hotels,
+  // regardless of what Claude returned
+  if (isLocalTrip) {
+    tripData.flights = [];
+    tripData.hotels = [];
+    tripData.isLocal = true;
   }
 
   return NextResponse.json(tripData);

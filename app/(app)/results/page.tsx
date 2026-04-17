@@ -298,7 +298,14 @@ function ResultsContent() {
           destinationType,
         }),
       })
-        .then((r) => r.json())
+        .then(async (r) => {
+          const text = await r.text();
+          try {
+            return JSON.parse(text);
+          } catch {
+            throw new Error("Trip planning timed out — please try again.");
+          }
+        })
         .then((data) => {
           if (data.error) throw new Error(data.error);
           const result = data as ItineraryResult;

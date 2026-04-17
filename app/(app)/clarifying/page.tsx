@@ -1,8 +1,11 @@
 "use client";
 
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { BudgetBucket, DateFlexibility } from "@/types/trip";
+import { createClient } from "@/lib/supabase/client";
+import type { BudgetBucket, DateFlexibility, TravelCompanion, TripVibe } from "@/types/trip";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const FLEX_OPTIONS: { value: DateFlexibility; label: string }[] = [
   { value: "yesTotally", label: "Yes, totally flexible" },
@@ -17,11 +20,22 @@ const BUDGET_OPTIONS: { value: BudgetBucket; label: string }[] = [
   { value: "over700", label: "€700+" },
 ];
 
-const STEP_QUESTIONS = [
-  "What dates are you thinking?",
-  "Are you flexible on those dates?",
-  "What's your budget for flights and accommodation?",
+const COMPANION_OPTIONS: { value: TravelCompanion; label: string; icon: string }[] = [
+  { value: "solo", label: "Just me", icon: "🙋" },
+  { value: "couple", label: "Couple", icon: "💑" },
+  { value: "friends", label: "Friends", icon: "🍻" },
+  { value: "family", label: "Family", icon: "👨‍👩‍👧" },
 ];
+
+const VIBE_OPTIONS: { value: TripVibe; label: string; icon: string }[] = [
+  { value: "eating_out", label: "Eating out", icon: "🍽️" },
+  { value: "culture", label: "Culture", icon: "🏛️" },
+  { value: "nightlife", label: "Nightlife", icon: "🎶" },
+  { value: "outdoors", label: "Outdoors", icon: "🌿" },
+  { value: "shopping", label: "Shopping", icon: "🛍️" },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function SparkleIcon() {
   return (
@@ -33,18 +47,56 @@ function SparkleIcon() {
   );
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 function ClarifyingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const rawQuery = searchParams.get("q") ?? "";
 
+  // Detect local trip by comparing query to user's home city
+  const [isLocal, setIsLocal] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    async function checkLocal() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prefs } = await supabase
+          .from("user_preferences")
+          .select("home_city")
+          .eq("id", user.id)
+          .single();
+        if (prefs?.home_city) {
+          const home = prefs.home_city.toLowerCase().trim();
+          const dest = rawQuery.toLowerCase().trim();
+          setIsLocal(dest === home || dest.includes(home) || home.includes(dest));
+        }
+      }
+      setLoadingProfile(false);
+    }
+    checkLocal();
+  }, [rawQuery]);
+
+  // Travel trip: steps 0=dates, 1=flex, 2=budget, 3=companion
+  // Local trip:  steps 0=dates, 1=vibes,           2=companion
+  const totalSteps = isLocal ? 3 : 4;
+
   const [step, setStep] = useState(0);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [answers, setAnswers] = useState<string[]>([]);
+  const [selectedVibes, setSelectedVibes] = useState<TripVibe[]>([]);
 
   const flexValueRef = useRef<DateFlexibility>("yesTotally");
+  const budgetValueRef = useRef<BudgetBucket>("b200to400");
   const today = new Date().toISOString().split("T")[0];
+
+  // ── Questions per step ──
+  const questions = isLocal
+    ? ["What dates are you exploring?", "What do you want to get up to?", "Who's going?"]
+    : ["What dates are you thinking?", "Are you flexible on those dates?", "What's your budget for flights and accommodation?", "Who's going?"];
 
   function handleDatesConfirm() {
     if (!startDate || !endDate) return;
@@ -59,64 +111,94 @@ function ClarifyingContent() {
   }
 
   function handleBudget(value: BudgetBucket, label: string) {
+    budgetValueRef.current = value;
     setAnswers((prev) => [...prev, label]);
+    setStep(3);
+  }
+
+  function toggleVibe(vibe: TripVibe) {
+    setSelectedVibes((prev) =>
+      prev.includes(vibe) ? prev.filter((v) => v !== vibe) : [...prev, vibe]
+    );
+  }
+
+  function handleVibesConfirm() {
+    if (selectedVibes.length === 0) return;
+    const label = selectedVibes.map((v) => VIBE_OPTIONS.find((o) => o.value === v)?.label ?? v).join(", ");
+    setAnswers((prev) => [...prev, label]);
+    setStep(2);
+  }
+
+  function handleCompanion(value: TravelCompanion, label: string) {
+    setAnswers((prev) => [...prev, label]);
+
     const params = new URLSearchParams({
       q: rawQuery,
       start: startDate,
       end: endDate,
-      flex: flexValueRef.current,
-      budget: value,
+      companion: value,
+      isLocal: String(isLocal),
     });
+
+    if (!isLocal) {
+      params.set("flex", flexValueRef.current);
+      params.set("budget", budgetValueRef.current);
+    } else {
+      params.set("vibes", selectedVibes.join(","));
+    }
+
     setTimeout(() => router.push(`/results?${params.toString()}`), 300);
   }
 
-  const percent = Math.round(((step + 1) / 3) * 100);
+  const percent = Math.round(((step + 1) / totalSteps) * 100);
+
+  if (loadingProfile) {
+    return (
+      <div className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    // Break out of parent padding to go full-bleed
-    <div className="-mx-4 sm:-mx-6 -mt-6 sm:-mt-10 -mb-6 sm:-mb-10 min-h-[calc(100dvh-3.5rem)] sm:min-h-[calc(100dvh-4rem)] flex flex-col lg:flex-row lg:h-[calc(100dvh-4rem)] overflow-hidden">
+    <div className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] flex overflow-hidden">
 
-      {/* Mobile: destination context (desktop uses illustration panel) */}
-      <div className="lg:hidden shrink-0 border-b border-border bg-surface px-4 py-3">
-        <p className="text-text-secondary text-xs font-bold uppercase tracking-widest">Your destination</p>
-        <p className="font-serif text-lg font-bold text-text-primary leading-snug mt-0.5 line-clamp-3 break-words">
-          {rawQuery || "Your trip"}
-        </p>
-      </div>
-
-      {/* ── Left: destination panel ── */}
+      {/* ── Left panel ── */}
       <div className="hidden lg:flex lg:w-[55%] relative h-full min-h-0 flex-col justify-end">
-        {/* Background illustration */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/Vintage travel excitement at the airport.png"
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        {/* Gradient overlay so text stays readable */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-        {/* Destination label */}
         <div className="relative px-10 pb-10">
+          {isLocal && (
+            <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3 backdrop-blur-sm">
+              Local explorer
+            </span>
+          )}
           <p className="text-white/60 text-sm font-medium mb-2 uppercase tracking-widest">
-            Your destination
+            {isLocal ? "Exploring" : "Your destination"}
           </p>
           <h2 className="font-serif text-4xl font-bold text-white leading-tight">
             {rawQuery}
           </h2>
           <p className="text-white/50 text-sm mt-3 leading-relaxed">
-            Planning your bespoke escape starts with a few quick questions.
+            {isLocal
+              ? "Let's find the best of your city for your dates."
+              : "Planning your bespoke escape starts with a few quick questions."}
           </p>
         </div>
       </div>
 
-      {/* ── Right: questions panel ── */}
-      <div className="flex-1 lg:w-[45%] flex flex-col bg-surface overflow-y-auto min-h-0 min-w-0">
+      {/* ── Right panel ── */}
+      <div className="flex-1 lg:w-[45%] flex flex-col bg-surface overflow-y-auto">
+
         {/* Progress */}
-        <div className="px-4 sm:px-6 lg:px-10 pt-6 sm:pt-10 pb-4 sm:pb-6 border-b border-border shrink-0">
+        <div className="px-10 pt-10 pb-6 border-b border-border shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-text-secondary uppercase tracking-widest">
-              Step {step + 1} of 3
+              Step {step + 1} of {totalSteps}
             </span>
             <span className="text-xs font-semibold text-text-secondary">
               {percent}% Complete
@@ -131,55 +213,45 @@ function ClarifyingContent() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 px-4 sm:px-6 lg:px-10 py-6 sm:py-8 flex flex-col gap-6">
-          {/* Previous answers */}
+        <div className="flex-1 px-10 py-8 flex flex-col gap-6">
+
+          {/* Previous answers as chips */}
           {answers.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {answers.map((a, i) => (
-                <span
-                  key={i}
-                  className="bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full"
-                >
+                <span key={i} className="bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full">
                   {a}
                 </span>
               ))}
             </div>
           )}
 
-          {/* Assistant message */}
+          {/* Assistant bubble */}
           <div className="flex gap-3 items-start">
             <SparkleIcon />
             <div className="bg-bg-page rounded-2xl rounded-tl-sm px-5 py-4 flex-1">
               <p className="text-text-primary font-medium leading-relaxed">
-                {STEP_QUESTIONS[step]}
+                {questions[step]}
               </p>
             </div>
           </div>
 
-          {/* Step 0 — Dates */}
+          {/* ── Step 0: Dates ── */}
           {step === 0 && (
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 min-w-0">
-                  <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">
-                    From
-                  </label>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">From</label>
                   <input
-                    type="date"
-                    min={today}
-                    value={startDate}
+                    type="date" min={today} value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     className="w-full bg-bg-page border border-border rounded-xl px-4 py-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                   />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">
-                    To
-                  </label>
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">To</label>
                   <input
-                    type="date"
-                    min={startDate || today}
-                    value={endDate}
+                    type="date" min={startDate || today} value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full bg-bg-page border border-border rounded-xl px-4 py-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                   />
@@ -198,31 +270,70 @@ function ClarifyingContent() {
             </div>
           )}
 
-          {/* Step 1 — Flexibility */}
-          {step === 1 && (
+          {/* ── Step 1 (travel): Flexibility ── */}
+          {step === 1 && !isLocal && (
             <div className="flex flex-col gap-2">
               {FLEX_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => handleFlex(value, label)}
-                  className="w-full text-left bg-bg-page border border-border hover:border-primary hover:bg-primary/5 text-text-primary text-sm font-medium px-5 py-4 rounded-xl transition-all"
-                >
+                <button key={value} onClick={() => handleFlex(value, label)}
+                  className="w-full text-left bg-bg-page border border-border hover:border-primary hover:bg-primary/5 text-text-primary text-sm font-medium px-5 py-4 rounded-xl transition-all">
                   {label}
                 </button>
               ))}
             </div>
           )}
 
-          {/* Step 2 — Budget */}
-          {step === 2 && (
+          {/* ── Step 1 (local): Vibes ── */}
+          {step === 1 && isLocal && (
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-2">
+                {VIBE_OPTIONS.map(({ value, label, icon }) => {
+                  const selected = selectedVibes.includes(value);
+                  return (
+                    <button key={value} onClick={() => toggleVibe(value)}
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border text-sm font-medium transition-all ${
+                        selected
+                          ? "bg-primary text-white border-primary"
+                          : "bg-bg-page border-border hover:border-primary hover:bg-primary/5 text-text-primary"
+                      }`}>
+                      <span>{icon}</span>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={handleVibesConfirm}
+                disabled={selectedVibes.length === 0}
+                className="w-full bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                Continue
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* ── Step 2 (travel): Budget ── */}
+          {step === 2 && !isLocal && (
             <div className="flex flex-col gap-2">
               {BUDGET_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => handleBudget(value, label)}
-                  className="w-full text-left bg-bg-page border border-border hover:border-primary hover:bg-primary/5 text-text-primary text-sm font-medium px-5 py-4 rounded-xl transition-all"
-                >
+                <button key={value} onClick={() => handleBudget(value, label)}
+                  className="w-full text-left bg-bg-page border border-border hover:border-primary hover:bg-primary/5 text-text-primary text-sm font-medium px-5 py-4 rounded-xl transition-all">
                   {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Step 3 (travel) / Step 2 (local): Who's going ── */}
+          {((step === 3 && !isLocal) || (step === 2 && isLocal)) && (
+            <div className="grid grid-cols-2 gap-2">
+              {COMPANION_OPTIONS.map(({ value, label, icon }) => (
+                <button key={value} onClick={() => handleCompanion(value, label)}
+                  className="flex flex-col items-center gap-2 bg-bg-page border border-border hover:border-primary hover:bg-primary/5 text-text-primary px-4 py-5 rounded-xl transition-all">
+                  <span className="text-2xl">{icon}</span>
+                  <span className="text-sm font-medium">{label}</span>
                 </button>
               ))}
             </div>

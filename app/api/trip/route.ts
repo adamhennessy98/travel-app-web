@@ -8,46 +8,52 @@ function sanitise(value: string, maxLen = MAX_FIELD_LENGTH): string {
   return value.slice(0, maxLen).replace(/[^\w\s\-,.!?''éèêëàâäùûüôöîïçñ€£$@#&()/:\\]+/gi, "").trim();
 }
 
-const SYSTEM_PROMPT =
-  "You are a personal travel curator for an app called YourWeekend. Your job is to create a single, cohesive, personalised trip plan based on everything you know about the user and their trip. You do not return generic results. Every recommendation should feel like it was chosen specifically for this person. The best pick flight and hotel should feel obvious. The activities should feel tailored — not tourist board filler. Respond only with a valid raw JSON object. No explanation, no preamble, no markdown, no code blocks. Just the JSON.";
+// ─── Prompts ──────────────────────────────────────────────────────────────────
 
-function buildUserPrompt(params: {
+const SYSTEM_PROMPT = `You are a personal travel editor for an app called YourWeekend. You create day-by-day itineraries that feel like they were written by a knowledgeable local friend — not a tourist board. Every recommendation is specific to this person. The best pick flight and hotel should feel obvious. Every time block should feel chosen for them, not copy-pasted from TripAdvisor.
+
+Respond ONLY with a valid raw JSON object. No explanation, no preamble, no markdown, no code blocks. Just JSON.`;
+
+function buildTravelPrompt(params: {
   homeCity: string;
-  travelsFor: string;
-  destinationType: string;
   destination: string;
   dates: string;
+  numDays: number;
   flexibility: string;
-  interests: string;
   budget: string;
+  companion: string;
+  travelsFor: string;
+  destinationType: string;
 }): string {
-  return `Plan a trip for a user with the following profile and trip details:
+  return `Plan a trip for this person:
 
 USER PROFILE
 - Home city: ${params.homeCity}
 - Travels for: ${params.travelsFor}
-- Loves: ${params.destinationType}
+- Favourite destination type: ${params.destinationType}
+- Travelling with: ${params.companion}
 
 TRIP DETAILS
-- Flying from: ${params.homeCity} nearest airport
+- Flying from: ${params.homeCity} (use nearest major airport)
 - Destination: ${params.destination}
-- Dates: ${params.dates}
+- Dates: ${params.dates} (${params.numDays} nights)
 - Date flexibility: ${params.flexibility}
-- Interests for this trip: ${params.interests}
-- Budget: ${params.budget}
+- Budget for flights + accommodation: ${params.budget}
 
-Return a JSON object matching this schema exactly:
+Return a JSON object matching this schema EXACTLY:
 
 {
-  "tripHeadline": "",
+  "tripHeadline": "A specific, personal headline for this trip (NOT generic)",
+  "tripNarrative": "2-3 sentences that set the scene for this trip. Specific to this person and destination.",
+  "isLocal": false,
   "flights": [
     {
       "airline": "",
-      "origin": "",
-      "destination": "",
-      "departureTime": "",
-      "arrivalTime": "",
-      "duration": "",
+      "origin": "3-letter IATA code",
+      "destination": "3-letter IATA code",
+      "departureTime": "HH:MM",
+      "arrivalTime": "HH:MM",
+      "duration": "Xh Ym",
       "stops": 0,
       "price": 0,
       "currency": "EUR",
@@ -60,7 +66,7 @@ Return a JSON object matching this schema exactly:
     {
       "name": "",
       "neighbourhood": "",
-      "starRating": 0,
+      "starRating": 3,
       "pricePerNight": 0,
       "currency": "EUR",
       "bookingUrl": "",
@@ -68,43 +74,116 @@ Return a JSON object matching this schema exactly:
       "bestPickReason": ""
     }
   ],
-  "mustDos": [
+  "days": [
     {
-      "name": "",
-      "description": "",
-      "whyThisUser": "",
-      "url": ""
-    }
-  ],
-  "whileYoureThere": [
-    {
-      "name": "",
-      "description": "",
-      "whyThisUser": "",
-      "url": ""
+      "dayNumber": 1,
+      "date": "YYYY-MM-DD",
+      "dayTitle": "Evocative title for the day",
+      "dayNarrative": "1-2 sentences introducing the day's vibe",
+      "timeBlocks": [
+        {
+          "type": "activity | restaurant | transport | free_time",
+          "startTime": "HH:MM",
+          "endTime": "HH:MM",
+          "title": "",
+          "description": "2-3 sentences. Specific, personal, not generic.",
+          "location": "Venue or area name",
+          "estimatedCost": 0,
+          "currency": "EUR",
+          "travelFromPrevious": "e.g. 10 min walk",
+          "bookingUrl": "",
+          "whyThisUser": "Why this specific person will love this",
+          "mealType": "breakfast | lunch | dinner (only for restaurant type)",
+          "cuisine": "e.g. Italian, Japanese (only for restaurant type)"
+        }
+      ]
     }
   ]
 }
 
-Rules:
-- Return exactly 3 flights. Mark exactly one isBestPick true. Others false with empty bestPickReason.
-- Return exactly 3 hotels. Mark exactly one isBestPick true. Others false with empty bestPickReason.
-- Return exactly 2 mustDos personalised to this user's profile and interests.
-- Return exactly 3 whileYoureThere items, lighter but still personalised.
-- Use real airlines, real airport codes, realistic prices for the route and dates.
-- Generate real airline booking URLs with origin, destination and dates as URL parameters.
-- Generate real Booking.com URLs with destination and dates pre-filled.
-- Generate real URLs for activities — venue websites, Google Maps, or booking pages.
-- The whyThisUser field must reference something specific about this user. Never generic.
-- The tripHeadline must feel personal and specific. Never generic.`;
+RULES:
+- Return exactly 3 flights. Mark exactly 1 isBestPick true with a specific reason. Others isBestPick false, bestPickReason empty string.
+- Return exactly 3 hotels. Mark exactly 1 isBestPick true with a specific reason. Others isBestPick false, bestPickReason empty string.
+- Return exactly ${params.numDays} day objects — one per night of the trip.
+- Day 1 starts with arrival/check-in. Last day ends with departure.
+- Each day must have: morning activity/explore block, lunch restaurant, afternoon activity, dinner restaurant, and an evening block.
+- travelFromPrevious must be realistic and specific (walk time, metro, taxi). Never null or empty string — use "0 min" if same location.
+- whyThisUser must reference something specific about THIS person's profile. Never generic filler.
+- tripHeadline must be vivid and personal. Never "Your Trip to X" or similar generic titles.
+- Use real venues, real restaurants, real airlines with realistic prices for the route.`;
 }
+
+function buildLocalPrompt(params: {
+  homeCity: string;
+  destination: string;
+  dates: string;
+  numDays: number;
+  companion: string;
+  vibes: string;
+  travelsFor: string;
+}): string {
+  return `Plan a local day-out itinerary for someone who lives in ${params.homeCity}:
+
+USER PROFILE
+- Lives in: ${params.homeCity}
+- Travels for: ${params.travelsFor}
+- Travelling with: ${params.companion}
+
+TRIP DETAILS
+- Exploring: ${params.destination} (their home city — no flights needed)
+- Dates: ${params.dates} (${params.numDays} day${params.numDays > 1 ? "s" : ""})
+- What they want: ${params.vibes}
+
+Return a JSON object matching this schema EXACTLY:
+
+{
+  "tripHeadline": "A specific, personal headline for this local experience",
+  "tripNarrative": "2-3 sentences setting the scene. Reference what they want to do and why it'll be great.",
+  "isLocal": true,
+  "flights": [],
+  "hotels": [],
+  "days": [
+    {
+      "dayNumber": 1,
+      "date": "YYYY-MM-DD",
+      "dayTitle": "Evocative title for the day",
+      "dayNarrative": "1-2 sentences introducing the day's vibe",
+      "timeBlocks": [
+        {
+          "type": "activity | restaurant | transport | free_time",
+          "startTime": "HH:MM",
+          "endTime": "HH:MM",
+          "title": "",
+          "description": "2-3 sentences. Specific, knowledgeable, like a local recommending to a friend.",
+          "location": "Specific venue or area name",
+          "estimatedCost": 0,
+          "currency": "EUR",
+          "travelFromPrevious": "e.g. 10 min walk",
+          "bookingUrl": "",
+          "whyThisUser": "Why this fits what they said they want",
+          "mealType": "breakfast | lunch | dinner (only for restaurant type)",
+          "cuisine": "e.g. Italian, Japanese (only for restaurant type)"
+        }
+      ]
+    }
+  ]
+}
+
+RULES:
+- flights and hotels must be empty arrays [].
+- Return exactly ${params.numDays} day object${params.numDays > 1 ? "s" : ""}.
+- Each day must have breakfast or morning coffee spot, morning activity, lunch, afternoon activity, dinner, evening activity or bar.
+- travelFromPrevious must be realistic walk/transit times. Never empty — use "0 min" if same venue.
+- Recommend real, specific venues in ${params.destination}. No generic tourist traps unless they're genuinely worth it.
+- whyThisUser must reference their stated vibes: ${params.vibes}.`;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function extractJson(raw: string): string {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
-  if (start === -1 || end <= start) {
-    throw new Error("No JSON object found in model response");
-  }
+  if (start === -1 || end <= start) throw new Error("No JSON object found in model response");
   return raw.slice(start, end + 1);
 }
 
@@ -119,26 +198,49 @@ function humaniseFlex(flex: string): string {
 
 function humaniseBudget(budget: string): string {
   const map: Record<string, string> = {
-    under200: "Under €200",
-    b200to400: "€200–€400",
-    b400to700: "€400–€700",
-    over700: "€700+",
+    under200: "Under €200 total",
+    b200to400: "€200–€400 total",
+    b400to700: "€400–€700 total",
+    over700: "€700+ total",
   };
   return map[budget] ?? budget;
 }
 
+function humaniseCompanion(companion: string): string {
+  const map: Record<string, string> = {
+    solo: "travelling solo",
+    couple: "travelling as a couple",
+    friends: "travelling with a group of friends",
+    family: "travelling with family",
+  };
+  return map[companion] ?? companion;
+}
+
+function humaniseVibes(vibes: string[]): string {
+  const map: Record<string, string> = {
+    eating_out: "eating out and food",
+    culture: "culture and sightseeing",
+    nightlife: "nightlife and bars",
+    outdoors: "outdoors and nature",
+    shopping: "shopping",
+  };
+  return vibes.map((v) => map[v] ?? v).join(", ");
+}
+
+function calcNumDays(start: string, end: string): number {
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  return Math.max(1, Math.round(ms / 86400000));
+}
+
+// ─── Route ────────────────────────────────────────────────────────────────────
+
 export async function POST(request: Request) {
   // ── Auth ──
   const user = await getAuthenticatedUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // ── Rate limit: 10 trip generations per user per hour ──
-  const { allowed } = rateLimit(`trip:${user.id}`, {
-    maxRequests: 10,
-    windowMs: 60 * 60 * 1000,
-  });
+  const { allowed } = rateLimit(`trip:${user.id}`, { maxRequests: 10, windowMs: 60 * 60 * 1000 });
   if (!allowed) {
     return NextResponse.json(
       { error: "You've made too many requests. Please try again later." },
@@ -148,10 +250,7 @@ export async function POST(request: Request) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey || apiKey === "your_api_key_here") {
-    return NextResponse.json(
-      { error: "Service temporarily unavailable" },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: "Service temporarily unavailable" }, { status: 503 });
   }
 
   let body: Record<string, string>;
@@ -161,30 +260,55 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { q, start, end, flex, budget, homeCity, travelsFor, destinationType } = body;
+  const {
+    q, start, end, flex, budget,
+    companion, vibes,
+    homeCity, travelsFor, destinationType,
+    isLocal,
+  } = body;
 
-  if (!q || !start || !end || !flex || !budget) {
+  if (!q || !start || !end) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // ── Validate date format ──
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(start) || !dateRegex.test(end)) {
     return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
   }
 
-  // ── Sanitise all user inputs ──
-  const userPrompt = buildUserPrompt({
-    homeCity: sanitise(homeCity || "Unknown"),
-    travelsFor: sanitise(travelsFor || "general travel"),
-    destinationType: sanitise(destinationType || "any destination"),
-    destination: sanitise(q),
-    dates: `${start} to ${end}`,
-    flexibility: humaniseFlex(flex),
-    interests: sanitise(travelsFor || "general sightseeing"),
-    budget: humaniseBudget(budget),
-  });
+  const numDays = calcNumDays(start, end);
+  const isLocalTrip = isLocal === "true";
 
+  let userPrompt: string;
+  if (isLocalTrip) {
+    const vibesArr = vibes ? vibes.split(",").map((v) => v.trim()) : [];
+    userPrompt = buildLocalPrompt({
+      homeCity: sanitise(homeCity || q),
+      destination: sanitise(q),
+      dates: `${start} to ${end}`,
+      numDays,
+      companion: humaniseCompanion(sanitise(companion || "solo")),
+      vibes: humaniseVibes(vibesArr),
+      travelsFor: sanitise(travelsFor || "general experiences"),
+    });
+  } else {
+    if (!flex || !budget) {
+      return NextResponse.json({ error: "Missing required fields for travel trip" }, { status: 400 });
+    }
+    userPrompt = buildTravelPrompt({
+      homeCity: sanitise(homeCity || "Unknown"),
+      destination: sanitise(q),
+      dates: `${start} to ${end}`,
+      numDays,
+      flexibility: humaniseFlex(flex),
+      budget: humaniseBudget(budget),
+      companion: humaniseCompanion(sanitise(companion || "solo")),
+      travelsFor: sanitise(travelsFor || "general travel"),
+      destinationType: sanitise(destinationType || "any destination"),
+    });
+  }
+
+  // ── Call Anthropic ──
   let anthropicRes: Response;
   try {
     anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -195,8 +319,8 @@ export async function POST(request: Request) {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
+        model: "claude-sonnet-4-5",
+        max_tokens: 8000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       }),

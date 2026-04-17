@@ -184,11 +184,10 @@ function HotelCard({ hotel, selected, onSelect, checkin, checkout, destination }
     <div onClick={onSelect}
       className={`bg-surface rounded-2xl border overflow-hidden cursor-pointer transition-all ${selected ? "border-primary ring-2 ring-primary/20 shadow-md" : "border-border hover:border-primary/40"}`}>
       <div className="relative h-36 overflow-hidden">
-        <TravelPhoto
-          query={`${hotel.neighbourhood} ${destination}`}
-          seed={hotel.name}
+        <img
+          src="/city-placeholder.jpg"
           alt={hotel.neighbourhood}
-          className="absolute inset-0"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className={`absolute top-3 right-3 w-5 h-5 rounded-full border-2 flex items-center justify-center ${selected ? "border-white bg-primary" : "border-white/70 bg-black/20"}`}>
@@ -406,15 +405,16 @@ function ResultsContent() {
     <div className="space-y-10">
 
       {/* ── Hero ── */}
-      <div className="-mx-6 -mt-10 relative h-72 lg:h-96 overflow-hidden">
-        <TravelPhoto
-          query={rawQuery}
-          seed={rawQuery}
-          alt={rawQuery}
-          className="absolute inset-0"
+      <div
+        className="-mx-6 -mt-10 relative h-72 lg:h-96 overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #0f172a 0%, #1e3a5f 55%, #2563eb 100%)" }}
+      >
+        {/* Fade the bottom edge into the page background */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
+          style={{ background: "linear-gradient(to bottom, transparent, #f0f4f9)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-8 flex items-end justify-between gap-4">
+        <div className="absolute bottom-0 left-0 right-0 px-6 pb-24 flex items-end justify-between gap-4">
           <div>
             <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">Your itinerary</p>
             <h1 className="font-serif text-3xl lg:text-4xl font-bold text-white leading-tight max-w-2xl">

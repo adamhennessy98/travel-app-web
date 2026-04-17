@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/apiAuth";
 import { rateLimit } from "@/lib/rateLimit";
 
+// Allow up to 60 seconds for this route — Anthropic needs time to generate
+// a full itinerary with flights, hotels and day-by-day time blocks.
+export const maxDuration = 60;
+
 const MAX_FIELD_LENGTH = 200;
 
 function sanitise(value: string, maxLen = MAX_FIELD_LENGTH): string {

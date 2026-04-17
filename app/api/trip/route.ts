@@ -47,14 +47,14 @@ TRIP DETAILS
 Return a JSON object matching this schema EXACTLY:
 
 {
-  "tripHeadline": "A specific, personal headline for this trip (NOT generic)",
-  "tripNarrative": "2-3 sentences that set the scene for this trip. Specific to this person and destination.",
+  "tripHeadline": "Vivid, personal headline — never 'Your Trip to X'",
+  "tripNarrative": "2 sentences setting the scene, specific to this person.",
   "isLocal": false,
   "flights": [
     {
       "airline": "",
-      "origin": "3-letter IATA code",
-      "destination": "3-letter IATA code",
+      "origin": "IATA",
+      "destination": "IATA",
       "departureTime": "HH:MM",
       "arrivalTime": "HH:MM",
       "duration": "Xh Ym",
@@ -82,23 +82,23 @@ Return a JSON object matching this schema EXACTLY:
     {
       "dayNumber": 1,
       "date": "YYYY-MM-DD",
-      "dayTitle": "Evocative title for the day",
-      "dayNarrative": "1-2 sentences introducing the day's vibe",
+      "dayTitle": "Short evocative title",
+      "dayNarrative": "1 sentence.",
       "timeBlocks": [
         {
           "type": "activity | restaurant | transport | free_time",
           "startTime": "HH:MM",
           "endTime": "HH:MM",
           "title": "",
-          "description": "2-3 sentences. Specific, personal, not generic.",
-          "location": "Venue or area name",
+          "description": "1-2 sentences. Specific, not generic.",
+          "location": "Venue or area",
           "estimatedCost": 0,
           "currency": "EUR",
           "travelFromPrevious": "e.g. 10 min walk",
           "bookingUrl": "",
-          "whyThisUser": "Why this specific person will love this",
-          "mealType": "breakfast | lunch | dinner (only for restaurant type)",
-          "cuisine": "e.g. Italian, Japanese (only for restaurant type)"
+          "whyThisUser": "One sentence — specific to this person.",
+          "mealType": "breakfast | lunch | dinner (restaurants only)",
+          "cuisine": "e.g. French (restaurants only)"
         }
       ]
     }
@@ -106,15 +106,13 @@ Return a JSON object matching this schema EXACTLY:
 }
 
 RULES:
-- Return exactly 3 flights. Mark exactly 1 isBestPick true with a specific reason. Others isBestPick false, bestPickReason empty string.
-- Return exactly 3 hotels. Mark exactly 1 isBestPick true with a specific reason. Others isBestPick false, bestPickReason empty string.
-- Return exactly ${params.numDays} day objects — one per night of the trip.
-- Day 1 starts with arrival/check-in. Last day ends with departure.
-- Each day must have: morning activity/explore block, lunch restaurant, afternoon activity, dinner restaurant, and an evening block.
-- travelFromPrevious must be realistic and specific (walk time, metro, taxi). Never null or empty string — use "0 min" if same location.
-- whyThisUser must reference something specific about THIS person's profile. Never generic filler.
-- tripHeadline must be vivid and personal. Never "Your Trip to X" or similar generic titles.
-- Use real venues, real restaurants, real airlines with realistic prices for the route.`;
+- Return exactly 3 flights. Mark exactly 1 isBestPick true. Others false, bestPickReason "".
+- Return exactly 3 hotels. Mark exactly 1 isBestPick true. Others false, bestPickReason "".
+- Return exactly ${params.numDays} day objects.
+- Each day has exactly 4 timeBlocks: morning activity, lunch restaurant, afternoon activity, dinner restaurant.
+- travelFromPrevious: realistic walk/transit time. Use "0 min" if same location. Never empty.
+- whyThisUser: specific to this person's profile. Never generic.
+- Use real venues, real airlines, realistic prices for the route.`;
 }
 
 function buildLocalPrompt(params: {
@@ -126,23 +124,22 @@ function buildLocalPrompt(params: {
   vibes: string;
   travelsFor: string;
 }): string {
-  return `Plan a local day-out itinerary for someone who lives in ${params.homeCity}:
+  return `Plan a local day-out for someone who lives in ${params.homeCity}:
 
 USER PROFILE
 - Lives in: ${params.homeCity}
-- Travels for: ${params.travelsFor}
 - Travelling with: ${params.companion}
 
 TRIP DETAILS
-- Exploring: ${params.destination} (their home city — no flights needed)
+- Exploring: ${params.destination} (home city — no flights needed)
 - Dates: ${params.dates} (${params.numDays} day${params.numDays > 1 ? "s" : ""})
 - What they want: ${params.vibes}
 
 Return a JSON object matching this schema EXACTLY:
 
 {
-  "tripHeadline": "A specific, personal headline for this local experience",
-  "tripNarrative": "2-3 sentences setting the scene. Reference what they want to do and why it'll be great.",
+  "tripHeadline": "Vivid, personal headline for this local experience",
+  "tripNarrative": "2 sentences. Reference their vibes specifically.",
   "isLocal": true,
   "flights": [],
   "hotels": [],
@@ -150,23 +147,23 @@ Return a JSON object matching this schema EXACTLY:
     {
       "dayNumber": 1,
       "date": "YYYY-MM-DD",
-      "dayTitle": "Evocative title for the day",
-      "dayNarrative": "1-2 sentences introducing the day's vibe",
+      "dayTitle": "Short evocative title",
+      "dayNarrative": "1 sentence.",
       "timeBlocks": [
         {
           "type": "activity | restaurant | transport | free_time",
           "startTime": "HH:MM",
           "endTime": "HH:MM",
           "title": "",
-          "description": "2-3 sentences. Specific, knowledgeable, like a local recommending to a friend.",
-          "location": "Specific venue or area name",
+          "description": "1-2 sentences. Specific, like a local tip.",
+          "location": "Specific venue or area",
           "estimatedCost": 0,
           "currency": "EUR",
           "travelFromPrevious": "e.g. 10 min walk",
           "bookingUrl": "",
-          "whyThisUser": "Why this fits what they said they want",
-          "mealType": "breakfast | lunch | dinner (only for restaurant type)",
-          "cuisine": "e.g. Italian, Japanese (only for restaurant type)"
+          "whyThisUser": "One sentence tied to their stated vibes.",
+          "mealType": "breakfast | lunch | dinner (restaurants only)",
+          "cuisine": "e.g. Italian (restaurants only)"
         }
       ]
     }
@@ -176,10 +173,9 @@ Return a JSON object matching this schema EXACTLY:
 RULES:
 - flights and hotels must be empty arrays [].
 - Return exactly ${params.numDays} day object${params.numDays > 1 ? "s" : ""}.
-- Each day must have breakfast or morning coffee spot, morning activity, lunch, afternoon activity, dinner, evening activity or bar.
-- travelFromPrevious must be realistic walk/transit times. Never empty — use "0 min" if same venue.
-- Recommend real, specific venues in ${params.destination}. No generic tourist traps unless they're genuinely worth it.
-- whyThisUser must reference their stated vibes: ${params.vibes}.`;
+- Each day has exactly 4 timeBlocks: morning activity, lunch, afternoon activity, dinner.
+- travelFromPrevious: realistic walk/transit. Use "0 min" if same venue. Never empty.
+- Real, specific venues only. whyThisUser must reference: ${params.vibes}.`;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -280,7 +276,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
   }
 
-  const numDays = calcNumDays(start, end);
+  const numDays = Math.min(calcNumDays(start, end), 4); // cap at 4 days to keep response fast
   const isLocalTrip = isLocal === "true";
 
   let userPrompt: string;
@@ -324,7 +320,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 8000,
+        max_tokens: 4000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       }),

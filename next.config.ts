@@ -17,7 +17,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://images.unsplash.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://api.unsplash.com",
+      "connect-src 'self' https://*.supabase.co https://api.unsplash.com https://geocoding-api.open-meteo.com",
       "frame-ancestors 'none'",
     ].join("; "),
   },

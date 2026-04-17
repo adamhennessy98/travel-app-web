@@ -19,7 +19,7 @@ export async function generateMetadata(
     .eq("is_shared", true)
     .single();
 
-  if (!data) return { title: "YourWeekend" };
+  if (!data) return { title: "VOYA" };
 
   const answers = data.answers as { startDate?: string; endDate?: string };
   const dates = answers?.startDate ? `${answers.startDate} – ${answers.endDate}` : "";
@@ -168,7 +168,10 @@ export default async function SharedTripPage(
     <div className="min-h-screen" style={{ background: "linear-gradient(to bottom, #0f172a, #1e1e2e)" }}>
       {/* Nav */}
       <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-black/30 backdrop-blur-md border-b border-white/10">
-        <Link href="/" className="font-serif text-xl font-bold text-white">YourWeekend</Link>
+        <Link href="/" className="flex items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/VOYA-logo.png" alt="VOYA" className="h-8 w-auto" style={{ filter: "brightness(0) invert(1)" }} />
+        </Link>
         <Link href="/"
           className="text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 px-4 py-2 rounded-full transition-colors">
           Plan your own trip
@@ -269,7 +272,7 @@ export default async function SharedTripPage(
         {/* CTA */}
         <div className="border-t border-white/10 pt-10 text-center space-y-4">
           <p className="font-serif text-2xl font-bold text-white">Ready to plan your own escape?</p>
-          <p className="text-white/50 text-sm">YourWeekend builds your perfect day-by-day itinerary in seconds.</p>
+          <p className="text-white/50 text-sm">VOYA builds your perfect day-by-day itinerary in seconds.</p>
           <Link href="/"
             className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-white/90 font-semibold px-8 py-3.5 rounded-full transition-colors text-sm">
             Plan a trip

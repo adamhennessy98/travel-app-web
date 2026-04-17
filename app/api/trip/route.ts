@@ -106,10 +106,10 @@ Return a JSON object matching this schema EXACTLY:
 }
 
 RULES:
-- Return exactly 3 flights. Mark exactly 1 isBestPick true. Others false, bestPickReason "".
-- Return exactly 3 hotels. Mark exactly 1 isBestPick true. Others false, bestPickReason "".
+- Return exactly 2 flights. Mark exactly 1 isBestPick true. The other false, bestPickReason "".
+- Return exactly 2 hotels. Mark exactly 1 isBestPick true. The other false, bestPickReason "".
 - Return exactly ${params.numDays} day objects.
-- Each day has exactly 4 timeBlocks: morning activity, lunch restaurant, afternoon activity, dinner restaurant.
+- Each day has exactly 3 timeBlocks: morning activity, lunch restaurant, dinner restaurant.
 - travelFromPrevious: realistic walk/transit time. Use "0 min" if same location. Never empty.
 - whyThisUser: specific to this person's profile. Never generic.
 - Use real venues, real airlines, realistic prices for the route.`;
@@ -276,7 +276,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
   }
 
-  const numDays = Math.min(calcNumDays(start, end), 4); // cap at 4 days to keep response fast
+  const numDays = Math.min(calcNumDays(start, end), 3); // cap at 3 days to keep response fast
   const isLocalTrip = isLocal === "true";
 
   let userPrompt: string;
@@ -319,7 +319,7 @@ export async function POST(request: Request) {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-5",
         max_tokens: 4000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],

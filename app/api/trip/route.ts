@@ -319,7 +319,7 @@ export async function POST(request: Request) {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 4000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
@@ -338,7 +338,7 @@ export async function POST(request: Request) {
     const text = await anthropicRes.text();
     console.error(`Anthropic API error ${anthropicRes.status}:`, text);
     return NextResponse.json(
-      { error: "The trip planning service returned an error. Please try again." },
+      { error: `Anthropic error ${anthropicRes.status}: ${text.slice(0, 300)}` },
       { status: 502 }
     );
   }

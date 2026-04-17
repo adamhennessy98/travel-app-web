@@ -191,14 +191,19 @@ function extractJson(raw: string): string {
 
 function humaniseFlex(flex: string): string {
   const map: Record<string, string> = {
+    flexible: "Flexible dates",
+    fixed: "Fixed dates",
+    // legacy bucket values
     yesTotally: "Totally flexible",
     dayOrTwo: "A day or two either way",
-    fixed: "Fixed dates",
   };
   return map[flex] ?? flex;
 }
 
-function humaniseBudget(budget: string): string {
+function humaniseBudget(budget: string, budgetMin?: string, budgetMax?: string): string {
+  if (budgetMin && budgetMax) return `€${budgetMin}–€${budgetMax} total`;
+  if (budget === "unsure" || !budget) return "flexible / not specified";
+  // legacy bucket values
   const map: Record<string, string> = {
     under200: "Under €200 total",
     b200to400: "€200–€400 total",
@@ -263,7 +268,7 @@ export async function POST(request: Request) {
   }
 
   const {
-    q, start, end, flex, budget,
+    q, start, end, flex, budget, budgetMin, budgetMax,
     companion, vibes,
     homeCity, travelsFor, destinationType,
     isLocal,
@@ -294,7 +299,7 @@ export async function POST(request: Request) {
       travelsFor: sanitise(travelsFor || "general experiences"),
     });
   } else {
-    if (!flex || !budget) {
+    if (!flex) {
       return NextResponse.json({ error: "Missing required fields for travel trip" }, { status: 400 });
     }
     userPrompt = buildTravelPrompt({
@@ -303,7 +308,7 @@ export async function POST(request: Request) {
       dates: `${start} to ${end}`,
       numDays,
       flexibility: humaniseFlex(flex),
-      budget: humaniseBudget(budget),
+      budget: humaniseBudget(budget || "", budgetMin, budgetMax),
       companion: humaniseCompanion(sanitise(companion || "solo")),
       travelsFor: sanitise(travelsFor || "general travel"),
       destinationType: sanitise(destinationType || "any destination"),

@@ -3,22 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { BudgetBucket, DateFlexibility, TravelCompanion, TripVibe } from "@/types/trip";
+import type { TravelCompanion, TripVibe } from "@/types/trip";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const FLEX_OPTIONS: { value: DateFlexibility; label: string }[] = [
-  { value: "yesTotally", label: "Totally flexible" },
-  { value: "dayOrTwo", label: "A day or two either way" },
-  { value: "fixed", label: "Fixed dates" },
-];
-
-const BUDGET_OPTIONS: { value: BudgetBucket; label: string }[] = [
-  { value: "under200", label: "Under €200" },
-  { value: "b200to400", label: "€200 – €400" },
-  { value: "b400to700", label: "€400 – €700" },
-  { value: "over700", label: "€700+" },
-];
 
 const COMPANION_OPTIONS: { value: TravelCompanion; label: string; icon: string }[] = [
   { value: "solo",    label: "Just me",  icon: "🙋"      },
@@ -90,13 +77,15 @@ function ClarifyingContent() {
   // Local:  step 0 = dates, step 1 = vibes, step 2 = companion  (3 steps)
   const totalSteps = isLocal ? 3 : 2;
 
-  const [step, setStep] = useState(0);
-  const [startDate, setStartDate]       = useState("");
-  const [endDate, setEndDate]           = useState("");
-  const [selectedFlex, setSelectedFlex] = useState<DateFlexibility | null>(null);
-  const [selectedBudget, setSelectedBudget] = useState<BudgetBucket | null>(null);
-  const [selectedVibes, setSelectedVibes]   = useState<TripVibe[]>([]);
-  const [answers, setAnswers]           = useState<string[]>([]);
+  const [step, setStep]               = useState(0);
+  const [startDate, setStartDate]     = useState("");
+  const [endDate, setEndDate]         = useState("");
+  const [flexChecked, setFlexChecked] = useState(false);
+  const [budgetMin, setBudgetMin]     = useState("");
+  const [budgetMax, setBudgetMax]     = useState("");
+  const [budgetUnsure, setBudgetUnsure] = useState(false);
+  const [selectedVibes, setSelectedVibes] = useState<TripVibe[]>([]);
+  const [answers, setAnswers]         = useState<string[]>([]);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -106,11 +95,13 @@ function ClarifyingContent() {
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
-  // Travel step 0 — confirm dates + flex + budget together
+  const budgetValid = budgetUnsure || (budgetMin !== "" && budgetMax !== "");
+
+  // Travel step 0 — dates + flex checkbox + budget
   function handleTravelStep0() {
-    if (!startDate || !endDate || !selectedFlex || !selectedBudget) return;
-    const flexLabel   = FLEX_OPTIONS.find((o) => o.value === selectedFlex)?.label ?? selectedFlex;
-    const budgetLabel = BUDGET_OPTIONS.find((o) => o.value === selectedBudget)?.label ?? selectedBudget;
+    if (!startDate || !endDate || !budgetValid) return;
+    const flexLabel   = flexChecked ? "Flexible dates" : "Fixed dates";
+    const budgetLabel = budgetUnsure ? "Not sure yet" : `€${budgetMin} – €${budgetMax}`;
     setAnswers([`${startDate} – ${endDate}`, flexLabel, budgetLabel]);
     setStep(1);
   }
@@ -137,7 +128,7 @@ function ClarifyingContent() {
     setStep(2);
   }
 
-  // Final step — companion
+  // Final step — companion → navigate to results
   function handleCompanion(value: TravelCompanion) {
     const params = new URLSearchParams({
       q: rawQuery,
@@ -146,9 +137,14 @@ function ClarifyingContent() {
       companion: value,
       isLocal: String(isLocal),
     });
-    if (!isLocal && selectedFlex && selectedBudget) {
-      params.set("flex", selectedFlex);
-      params.set("budget", selectedBudget);
+    if (!isLocal) {
+      params.set("flex", flexChecked ? "flexible" : "fixed");
+      if (budgetUnsure) {
+        params.set("budget", "unsure");
+      } else {
+        params.set("budgetMin", budgetMin);
+        params.set("budgetMax", budgetMax);
+      }
     } else {
       params.set("vibes", selectedVibes.join(","));
     }
@@ -249,7 +245,7 @@ function ClarifyingContent() {
             </div>
           </div>
 
-          {/* ── Travel step 0: Dates + Flexibility + Budget ── */}
+          {/* ── Travel step 0: Dates + Flexibility checkbox + Budget inputs ── */}
           {step === 0 && !isLocal && (
             <div className="flex flex-col gap-6">
 
@@ -273,53 +269,72 @@ function ClarifyingContent() {
                 </div>
               </div>
 
-              {/* Flexibility */}
-              <div>
-                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide mb-3">
-                  How flexible are you on these dates?
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {FLEX_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => setSelectedFlex(value)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
-                        selectedFlex === value
-                          ? "bg-primary text-white border-primary"
-                          : "bg-bg-page border-border hover:border-primary hover:bg-primary/5 text-text-primary"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+              {/* Flexibility — single checkbox */}
+              <button
+                type="button"
+                onClick={() => setFlexChecked((v) => !v)}
+                className="flex items-center gap-3 group w-fit"
+              >
+                <div
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all shrink-0 ${
+                    flexChecked
+                      ? "bg-primary border-primary"
+                      : "bg-bg-page border-border group-hover:border-primary/60"
+                  }`}
+                >
+                  {flexChecked && (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white" className="w-3 h-3">
+                      <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </div>
-              </div>
+                <span className="text-sm font-medium text-text-primary select-none">
+                  I&apos;m flexible on these dates
+                </span>
+              </button>
 
-              {/* Budget */}
+              {/* Budget — min/max inputs */}
               <div>
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide mb-3">
-                  What is your budget range for this trip?
+                  Budget for flights + accommodation
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {BUDGET_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => setSelectedBudget(value)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
-                        selectedBudget === value
-                          ? "bg-primary text-white border-primary"
-                          : "bg-bg-page border-border hover:border-primary hover:bg-primary/5 text-text-primary"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                <div className={`flex gap-3 items-end transition-opacity ${budgetUnsure ? "opacity-40 pointer-events-none" : ""}`}>
+                  <div className="flex-1">
+                    <label className="block text-xs text-text-secondary mb-1.5">Min (€)</label>
+                    <input
+                      type="number" min="0" placeholder="0"
+                      value={budgetMin}
+                      onChange={(e) => setBudgetMin(e.target.value)}
+                      className="w-full bg-bg-page border border-border rounded-xl px-4 py-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                    />
+                  </div>
+                  <span className="text-text-secondary font-medium pb-3">–</span>
+                  <div className="flex-1">
+                    <label className="block text-xs text-text-secondary mb-1.5">Max (€)</label>
+                    <input
+                      type="number" min="0" placeholder="1000"
+                      value={budgetMax}
+                      onChange={(e) => setBudgetMax(e.target.value)}
+                      className="w-full bg-bg-page border border-border rounded-xl px-4 py-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setBudgetUnsure((v) => !v); setBudgetMin(""); setBudgetMax(""); }}
+                    className={`shrink-0 text-sm font-medium px-4 py-3 rounded-xl border transition-all ${
+                      budgetUnsure
+                        ? "bg-primary text-white border-primary"
+                        : "bg-bg-page border-border text-text-secondary hover:border-primary/60 hover:text-text-primary"
+                    }`}
+                  >
+                    Not sure yet
+                  </button>
                 </div>
               </div>
 
               <button
                 onClick={handleTravelStep0}
-                disabled={!startDate || !endDate || !selectedFlex || !selectedBudget}
+                disabled={!startDate || !endDate || !budgetValid}
                 className="w-full bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
               >
                 Continue

@@ -301,6 +301,8 @@ function ResultsContent() {
           end: endDate,
           flex: searchParams.get("flex") ?? "",
           budget: searchParams.get("budget") ?? "",
+          budgetMin: searchParams.get("budgetMin") ?? "",
+          budgetMax: searchParams.get("budgetMax") ?? "",
           companion: searchParams.get("companion") ?? "solo",
           vibes: searchParams.get("vibes") ?? "",
           isLocal: String(isLocal),
@@ -391,14 +393,18 @@ function ResultsContent() {
   if (!trip) return null;
 
   // ── Budget warning ────────────────────────────────────────────────────────
-  const budgetParam = searchParams.get("budget") ?? "";
+  const budgetParam    = searchParams.get("budget") ?? "";
+  const budgetMaxParam = searchParams.get("budgetMax") ?? "";
+  // Custom max from inputs takes priority; fall back to legacy bucket caps
   const BUDGET_CAPS: Record<string, number> = {
     under200: 200, b200to400: 400, b400to700: 700, over700: Infinity,
   };
-  const BUDGET_LABELS: Record<string, string> = {
-    under200: "€200", b200to400: "€400", b400to700: "€700",
-  };
-  const budgetCap = BUDGET_CAPS[budgetParam] ?? Infinity;
+  const budgetCap = budgetMaxParam
+    ? parseInt(budgetMaxParam)
+    : (BUDGET_CAPS[budgetParam] ?? Infinity);
+  const budgetCapLabel = budgetMaxParam ? `€${budgetMaxParam}` : (
+    { under200: "€200", b200to400: "€400", b400to700: "€700" }[budgetParam] ?? "stated"
+  );
   const nights = startDate && endDate
     ? Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000))
     : 1;
@@ -409,6 +415,7 @@ function ResultsContent() {
   const estimatedMin = minFlight + minHotel * nights;
   const showBudgetWarning =
     !isLocal &&
+    budgetParam !== "unsure" &&
     budgetCap < Infinity &&
     estimatedMin > 0 &&
     estimatedMin > budgetCap * 1.3;
@@ -469,7 +476,7 @@ function ResultsContent() {
             <p className="text-amber-700 text-sm mt-0.5 leading-relaxed">
               The cheapest options we found come to around{" "}
               <span className="font-bold">€{Math.round(estimatedMin)}</span>
-              {" "}— over your {BUDGET_LABELS[budgetParam] ?? "stated"} budget.
+              {" "}— over your {budgetCapLabel} budget.
               We&apos;ve picked the best value available.
             </p>
           </div>

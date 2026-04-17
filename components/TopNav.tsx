@@ -43,11 +43,12 @@ export default function TopNav() {
     <header className="sticky top-0 z-50 bg-surface border-b border-nav-border">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
         {/* Logo */}
-        <Link
-          href="/"
-          className="font-serif text-lg sm:text-xl font-bold text-primary tracking-tight shrink-0 min-w-0 truncate"
-        >
-          YourWeekend
+        <Link href="/" className="shrink-0 flex items-center">
+          <img
+            src="/VOYA-logo.png"
+            alt="VOYA"
+            className="h-7 sm:h-8 w-auto"
+          />
         </Link>
 
         {/* Desktop nav */}

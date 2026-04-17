@@ -244,13 +244,5 @@ export async function POST(request: Request) {
     );
   }
 
-  // Guarantee local trips never have flights or hotels,
-  // regardless of what Claude returned
-  if (isLocalTrip) {
-    tripData.flights = [];
-    tripData.hotels = [];
-    tripData.isLocal = true;
-  }
-
   return NextResponse.json(tripData);
 }

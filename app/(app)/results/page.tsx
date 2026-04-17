@@ -414,8 +414,8 @@ function ResultsContent() {
         </div>
       </div>
 
-      {/* ── Flights (hidden for local trips) ── */}
-      {!isLocal && trip.flights.length > 0 && (
+      {/* ── Flights (hidden for local trips or when none returned) ── */}
+      {!isLocal && !trip.isLocal && trip.flights.length > 0 && trip.flights.some(f => f.price > 0) && (
         <section>
           <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">Flights — select one</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -428,7 +428,7 @@ function ResultsContent() {
       )}
 
       {/* ── Hotels (hidden for local trips) ── */}
-      {!isLocal && trip.hotels.length > 0 && (
+      {!isLocal && !trip.isLocal && trip.hotels.length > 0 && (
         <section>
           <h2 className="text-xs font-bold tracking-widest text-text-secondary uppercase mb-4">Where to stay — select one</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

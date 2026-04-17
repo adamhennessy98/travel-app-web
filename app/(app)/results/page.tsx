@@ -402,17 +402,16 @@ function ResultsContent() {
     estimatedMin > 0 &&
     estimatedMin > budgetCap * 1.3;
 
-  const heroKeyword = encodeURIComponent(rawQuery.split(" ").slice(0, 3).join(" "));
-
   return (
     <div className="space-y-10">
 
       {/* ── Hero ── */}
       <div className="-mx-6 -mt-10 relative h-72 lg:h-96 overflow-hidden">
-        <img
-          src={`https://source.unsplash.com/featured/1400x600/?${heroKeyword},travel,destination`}
+        <TravelPhoto
+          query={rawQuery}
+          seed={rawQuery}
           alt={rawQuery}
-          className="w-full h-full object-cover"
+          className="absolute inset-0"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-8 flex items-end justify-between gap-4">

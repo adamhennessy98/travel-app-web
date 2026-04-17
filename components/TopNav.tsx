@@ -47,7 +47,7 @@ export default function TopNav() {
           <img
             src="/VOYA-logo.png"
             alt="VOYA"
-            className="h-7 sm:h-8 w-auto"
+            className="h-10 sm:h-12 w-auto"
           />
         </Link>
 

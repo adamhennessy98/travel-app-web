@@ -379,6 +379,29 @@ function ResultsContent() {
 
   if (!trip) return null;
 
+  // ── Budget warning ────────────────────────────────────────────────────────
+  const budgetParam = searchParams.get("budget") ?? "";
+  const BUDGET_CAPS: Record<string, number> = {
+    under200: 200, b200to400: 400, b400to700: 700, over700: Infinity,
+  };
+  const BUDGET_LABELS: Record<string, string> = {
+    under200: "€200", b200to400: "€400", b400to700: "€700",
+  };
+  const budgetCap = BUDGET_CAPS[budgetParam] ?? Infinity;
+  const nights = startDate && endDate
+    ? Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000))
+    : 1;
+  const validFlights = trip.flights.map((f) => f.price).filter((p) => p > 0);
+  const validHotels  = trip.hotels.map((h) => h.pricePerNight).filter((p) => p > 0);
+  const minFlight    = validFlights.length > 0 ? Math.min(...validFlights) : 0;
+  const minHotel     = validHotels.length  > 0 ? Math.min(...validHotels)  : 0;
+  const estimatedMin = minFlight + minHotel * nights;
+  const showBudgetWarning =
+    !isLocal &&
+    budgetCap < Infinity &&
+    estimatedMin > 0 &&
+    estimatedMin > budgetCap * 1.3;
+
   const heroKeyword = encodeURIComponent(rawQuery.split(" ").slice(0, 3).join(" "));
 
   return (
@@ -420,6 +443,22 @@ function ResultsContent() {
           </button>
         </div>
       </div>
+
+      {/* ── Budget warning ── */}
+      {showBudgetWarning && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+          <span className="text-lg shrink-0" aria-hidden>⚠️</span>
+          <div>
+            <p className="font-semibold text-amber-800 text-sm">Heads up on budget</p>
+            <p className="text-amber-700 text-sm mt-0.5 leading-relaxed">
+              The cheapest options we found come to around{" "}
+              <span className="font-bold">€{Math.round(estimatedMin)}</span>
+              {" "}— over your {BUDGET_LABELS[budgetParam] ?? "stated"} budget.
+              We&apos;ve picked the best value available.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Flights (hidden for local trips or when none returned) ── */}
       {!isLocal && !trip.isLocal && trip.flights.length > 0 && trip.flights.some(f => f.price > 0) && (

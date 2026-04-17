@@ -225,8 +225,15 @@ function HotelCard({ hotel, selected, onSelect, checkin, checkout, destination }
 
 function LoadingState({ query }: { query: string }) {
   return (
-    <div className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] relative flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)" }}>
+    <div
+      className="-mt-10 -mb-10 relative flex flex-col items-center justify-center overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)",
+        height: "calc(100vh - 4rem)",
+        width: "100vw",
+        marginLeft: "calc(50% - 50vw)",
+      }}
+    >
       <div className="absolute inset-0 opacity-10"
         style={{ backgroundImage: "radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
       <div className="relative z-10 flex flex-col items-center gap-5 text-center px-6">
@@ -406,15 +413,20 @@ function ResultsContent() {
 
       {/* ── Hero ── */}
       <div
-        className="-mx-6 -mt-10 relative h-72 lg:h-96 overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #0f172a 0%, #1e3a5f 55%, #2563eb 100%)" }}
+        className="-mt-10 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, #0f172a 0%, #1e3a5f 55%, #2563eb 100%)",
+          height: "clamp(280px, 40vh, 420px)",
+          width: "100vw",
+          marginLeft: "calc(50% - 50vw)",
+        }}
       >
         {/* Fade the bottom edge into the page background */}
         <div
-          className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
+          className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
           style={{ background: "linear-gradient(to bottom, transparent, #f0f4f9)" }}
         />
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-24 flex items-end justify-between gap-4">
+        <div className="absolute bottom-0 left-0 right-0 px-8 pb-20 flex items-end justify-between gap-4">
           <div>
             <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">Your itinerary</p>
             <h1 className="font-serif text-3xl lg:text-4xl font-bold text-white leading-tight max-w-2xl">

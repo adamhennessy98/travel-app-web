@@ -154,14 +154,20 @@ function ClarifyingContent() {
 
   if (loadingProfile) {
     return (
-      <div className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div
+        className="-mt-10 -mb-10 flex items-center justify-center"
+        style={{ height: "calc(100vh - 4rem)", width: "100vw", marginLeft: "calc(50% - 50vw)" }}
+      >
         <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="-mx-6 -mt-10 -mb-10 h-[calc(100vh-4rem)] flex overflow-hidden">
+    <div
+      className="-mt-10 -mb-10 flex overflow-hidden"
+      style={{ height: "calc(100vh - 4rem)", width: "100vw", marginLeft: "calc(50% - 50vw)" }}
+    >
 
       {/* ── Left panel ── */}
       <div className="hidden lg:flex lg:w-[55%] relative h-full min-h-0 flex-col justify-end">

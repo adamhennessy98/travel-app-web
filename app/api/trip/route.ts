@@ -117,6 +117,117 @@ RULES:
 - Use real venues, real airlines, realistic prices for the route.`;
 }
 
+function buildEventPrompt(params: {
+  homeCity: string;
+  destination: string;
+  eventName: string;
+  dates: string;
+  numDays: number;
+  budget: string;
+  accommodation: string;
+  companion: string;
+  groupSize?: string;
+}): string {
+  const accomMap: Record<string, string> = {
+    near_venue:  "as close to the event venue as possible",
+    city_centre: "in the city centre (willing to commute to the venue)",
+    best_value:  "best value available",
+  };
+  const accomPref = accomMap[params.accommodation] ?? "best value available";
+
+  const groupNote = params.groupSize && parseInt(params.groupSize) > 1
+    ? `Group of ${params.groupSize} people — recommend rooms/apartments that fit the group size.`
+    : "";
+
+  return `Plan an event trip for this person:
+
+USER PROFILE
+- Home city: ${params.homeCity}
+- Travelling with: ${params.companion}
+${groupNote}
+
+TRIP DETAILS
+- Flying from: ${params.homeCity} (use nearest major airport)
+- Destination: ${params.destination}
+- The event: ${params.eventName}
+- Dates: ${params.dates} (${params.numDays} nights)
+- Budget for flights + accommodation: ${params.budget}
+- Accommodation preference: ${accomPref}
+
+Return a JSON object matching this schema EXACTLY:
+
+{
+  "tripHeadline": "Vivid headline — reference the event, never generic",
+  "tripNarrative": "2 sentences. The event is the reason for this trip — make that clear.",
+  "isLocal": false,
+  "flights": [
+    {
+      "airline": "",
+      "origin": "IATA",
+      "destination": "IATA",
+      "departureTime": "HH:MM",
+      "arrivalTime": "HH:MM",
+      "duration": "Xh Ym",
+      "stops": 0,
+      "layovers": [{ "airport": "IATA", "city": "City name", "duration": "Xh Ym" }],
+      "price": 0,
+      "currency": "EUR",
+      "bookingUrl": "",
+      "isBestPick": false,
+      "bestPickReason": ""
+    }
+  ],
+  "hotels": [
+    {
+      "name": "",
+      "neighbourhood": "",
+      "starRating": 3,
+      "pricePerNight": 0,
+      "currency": "EUR",
+      "bookingUrl": "",
+      "isBestPick": false,
+      "bestPickReason": ""
+    }
+  ],
+  "days": [
+    {
+      "dayNumber": 1,
+      "date": "YYYY-MM-DD",
+      "dayTitle": "Short evocative title",
+      "dayNarrative": "1 sentence.",
+      "timeBlocks": [
+        {
+          "type": "activity | restaurant | transport | free_time",
+          "startTime": "HH:MM",
+          "endTime": "HH:MM",
+          "title": "",
+          "description": "1-2 sentences. Specific, not generic.",
+          "location": "Venue or area",
+          "estimatedCost": 0,
+          "currency": "EUR",
+          "travelFromPrevious": "e.g. 10 min walk",
+          "bookingUrl": "",
+          "whyThisUser": "One sentence — tie it back to the event.",
+          "mealType": "breakfast | lunch | dinner (restaurants only)",
+          "cuisine": "e.g. German (restaurants only)"
+        }
+      ]
+    }
+  ]
+}
+
+RULES:
+- Return exactly 2 flights. Mark exactly 1 isBestPick true. The other false, bestPickReason "".
+- Return exactly 2 hotels. Prioritise the accommodation preference: ${accomPref}. Mark exactly 1 isBestPick true.
+- layovers: empty [] for direct, one entry per stop with real IATA, city, and layover duration.
+- Return exactly ${params.numDays} day objects.
+- The day ${params.eventName} takes place must have it as a dedicated timeBlock with type "activity", given a 4-6 hour window. This is the centrepiece — make the description vivid and specific.
+- Every other day has exactly 3 timeBlocks: morning activity, lunch, dinner.
+- travelFromPrevious: realistic walk/transit time. Never empty.
+- whyThisUser: always reference ${params.eventName}.
+- Use real venues, real airlines, realistic prices for the route.`;
+}
+
 function buildLocalPrompt(params: {
   homeCity: string;
   destination: string;
@@ -269,9 +380,9 @@ export async function POST(request: Request) {
 
   const {
     q, start, end, flex, budget, budgetMin, budgetMax,
-    companion, vibes,
+    companion, groupSize, vibes,
     homeCity, travelsFor, destinationType,
-    isLocal,
+    isLocal, isEvent, event, accommodation,
   } = body;
 
   if (!q || !start || !end) {
@@ -283,11 +394,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
   }
 
-  const numDays = Math.min(calcNumDays(start, end), 3); // cap at 3 days to keep response fast
+  const numDays = Math.min(calcNumDays(start, end), 3);
   const isLocalTrip = isLocal === "true";
+  const isEventTrip = isEvent === "true";
 
   let userPrompt: string;
-  if (isLocalTrip) {
+  if (isEventTrip) {
+    if (!event) {
+      return NextResponse.json({ error: "Missing event name" }, { status: 400 });
+    }
+    userPrompt = buildEventPrompt({
+      homeCity: sanitise(homeCity || "Unknown"),
+      destination: sanitise(q),
+      eventName: sanitise(event),
+      dates: `${start} to ${end}`,
+      numDays,
+      budget: humaniseBudget(budget || "", budgetMin, budgetMax),
+      accommodation: sanitise(accommodation || "best_value"),
+      companion: humaniseCompanion(sanitise(companion || "solo")),
+      groupSize: groupSize || "",
+    });
+  } else if (isLocalTrip) {
     const vibesArr = vibes ? vibes.split(",").map((v) => v.trim()) : [];
     userPrompt = buildLocalPrompt({
       homeCity: sanitise(homeCity || q),

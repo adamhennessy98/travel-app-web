@@ -8,6 +8,8 @@ import { SavedHeroImage } from "@/components/TravelPhoto";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+type SearchMode = "plan" | "event" | "inspire";
+
 interface GeoCity {
   id: number;
   name: string;
@@ -30,34 +32,82 @@ interface LastTrip {
   } | null;
 }
 
-// ── Quick-pick chips ─────────────────────────────────────────────────────────
+// ── Mode config ───────────────────────────────────────────────────────────────
 
-const QUICK_PICKS = [
-  { label: "Paris",     city: "Paris",     country: "France" },
-  { label: "Lisbon",    city: "Lisbon",    country: "Portugal" },
-  { label: "Tokyo",     city: "Tokyo",     country: "Japan" },
-  { label: "Barcelona", city: "Barcelona", country: "Spain" },
+const MODES: {
+  value: SearchMode;
+  label: string;
+  icon: string;
+  cityPlaceholder: string;
+  subtitle: string;
+}[] = [
+  {
+    value: "plan",
+    label: "Plan a trip",
+    icon: "✈️",
+    cityPlaceholder: "Where are you headed? e.g. Paris, Tokyo…",
+    subtitle: "Tell us where you're headed — we'll handle the rest.",
+  },
+  {
+    value: "event",
+    label: "I have an event",
+    icon: "🎪",
+    cityPlaceholder: "Where is it? e.g. Munich…",
+    subtitle: "Got an event in mind? We'll build the whole trip around it.",
+  },
+  {
+    value: "inspire",
+    label: "Inspire me",
+    icon: "💡",
+    cityPlaceholder: "",
+    subtitle: "Not sure where to go? We'll find the perfect destination for you.",
+  },
 ];
 
-// ── Component ────────────────────────────────────────────────────────────────
+// ── Quick picks ───────────────────────────────────────────────────────────────
+
+const QUICK_PICKS_PLAN = [
+  { label: "Paris",     city: "Paris",     country: "France"   },
+  { label: "Lisbon",    city: "Lisbon",    country: "Portugal" },
+  { label: "Tokyo",     city: "Tokyo",     country: "Japan"    },
+  { label: "Barcelona", city: "Barcelona", country: "Spain"    },
+];
+
+const QUICK_PICKS_EVENT = [
+  { label: "Oktoberfest",  event: "Oktoberfest",                   city: "Munich, Germany"          },
+  { label: "Monaco GP",    event: "Formula 1 Monaco Grand Prix",   city: "Monaco, Monaco"           },
+  { label: "Tomorrowland", event: "Tomorrowland Music Festival",   city: "Boom, Belgium"            },
+  { label: "Carnival",     event: "Venice Carnival",               city: "Venice, Italy"            },
+];
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const router = useRouter();
 
-  // Search
+  // Mode
+  const [mode, setMode]                   = useState<SearchMode>("plan");
+  const [showModeMenu, setShowModeMenu]   = useState(false);
+
+  // City search (shared across plan + event modes)
   const [query, setQuery]               = useState("");
   const [verified, setVerified]         = useState(false);
   const [suggestions, setSuggestions]   = useState<GeoCity[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingSugs, setLoadingSugs]   = useState(false);
   const [activeIndex, setActiveIndex]   = useState(-1);
+
+  // Event-mode extra field
+  const [eventName, setEventName] = useState("");
+
+  // Refs
   const debounceRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
 
   // Last trip
   const [lastTrip, setLastTrip] = useState<LastTrip | null>(null);
 
-  // Close dropdown when clicking outside the search wrapper
+  // Close dropdowns when clicking outside the search wrapper
   useEffect(() => {
     function onOutsideClick(e: MouseEvent) {
       if (
@@ -65,13 +115,14 @@ export default function HomePage() {
         !searchWrapperRef.current.contains(e.target as Node)
       ) {
         setShowDropdown(false);
+        setShowModeMenu(false);
       }
     }
     document.addEventListener("mousedown", onOutsideClick);
     return () => document.removeEventListener("mousedown", onOutsideClick);
   }, []);
 
-  // Fetch last saved trip for the "pick up where you left off" card
+  // Fetch last saved trip
   useEffect(() => {
     async function load() {
       const supabase = createClient();
@@ -88,7 +139,18 @@ export default function HomePage() {
     load();
   }, []);
 
-  // ── Geocoding ─────────────────────────────────────────────────────────────
+  // Reset search state when switching modes
+  function switchMode(m: SearchMode) {
+    setMode(m);
+    setShowModeMenu(false);
+    setQuery("");
+    setVerified(false);
+    setEventName("");
+    setSuggestions([]);
+    setShowDropdown(false);
+  }
+
+  // ── Geocoding ──────────────────────────────────────────────────────────────
 
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
@@ -99,9 +161,7 @@ export default function HomePage() {
     setLoadingSugs(true);
     try {
       const res = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-          q
-        )}&count=6&language=en&format=json`
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`
       );
       const data = await res.json();
       const results: GeoCity[] = (data.results ?? []).slice(0, 6);
@@ -116,11 +176,11 @@ export default function HomePage() {
     }
   }, []);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   function handleQueryChange(value: string) {
     setQuery(value);
-    setVerified(false); // editing invalidates any prior selection
+    setVerified(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(value), 350);
   }
@@ -145,10 +205,7 @@ export default function HomePage() {
         setActiveIndex((i) => (i > 0 ? i - 1 : suggestions.length - 1));
         break;
       case "Enter":
-        if (activeIndex >= 0) {
-          e.preventDefault();
-          selectCity(suggestions[activeIndex]);
-        }
+        if (activeIndex >= 0) { e.preventDefault(); selectCity(suggestions[activeIndex]); }
         break;
       case "Escape":
         setShowDropdown(false);
@@ -157,11 +214,29 @@ export default function HomePage() {
   }
 
   function handleSubmit() {
+    if (mode === "inspire") {
+      router.push("/inspiration");
+      return;
+    }
     if (!verified) return;
+    if (mode === "event") {
+      if (!eventName.trim()) return;
+      router.push(
+        `/event?event=${encodeURIComponent(eventName.trim())}&q=${encodeURIComponent(query)}`
+      );
+      return;
+    }
     router.push(`/clarifying?q=${encodeURIComponent(query)}`);
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const canSubmit =
+    mode === "inspire" ||
+    (mode === "plan" && verified) ||
+    (mode === "event" && verified && eventName.trim().length > 0);
+
+  const currentMode = MODES.find((m) => m.value === mode)!;
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col items-center w-full min-w-0 px-0">
@@ -174,105 +249,136 @@ export default function HomePage() {
           <br />
           escape.
         </h1>
-        <p className="text-text-secondary text-lg">
-          Tell us where you&apos;re headed — we&apos;ll handle the rest.
+        <p className="text-text-secondary text-lg transition-all duration-300">
+          {currentMode.subtitle}
         </p>
       </div>
 
-      {/* Search wrapper — relative so the dropdown is anchored here */}
+      {/* Search wrapper */}
       <div ref={searchWrapperRef} className="relative w-full max-w-2xl min-w-0">
 
         {/* Input bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center bg-surface rounded-2xl shadow-sm border border-border px-4 sm:px-5 py-3 sm:py-1 gap-3 sm:gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center bg-surface rounded-2xl shadow-sm border border-border overflow-visible">
 
-          {/* Icon: checkmark when verified, pin otherwise */}
-          {verified ? (
-            <svg
-              className="w-5 h-5 text-primary shrink-0 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
+          {/* ── Mode selector ── */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowModeMenu((v) => !v)}
+              className="flex items-center gap-2 px-4 py-3.5 sm:py-0 sm:h-full text-sm font-semibold text-text-primary hover:text-primary transition-colors whitespace-nowrap sm:border-r sm:border-border border-b sm:border-b-0 border-border w-full sm:w-auto justify-between sm:justify-start"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="w-5 h-5 text-text-placeholder shrink-0 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.75}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
-              />
-            </svg>
-          )}
+              <span className="flex items-center gap-2">
+                <span>{currentMode.icon}</span>
+                <span>{currentMode.label}</span>
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor"
+                className={`w-3.5 h-3.5 text-text-secondary transition-transform ${showModeMenu ? "rotate-180" : ""}`}>
+                <path fillRule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              </svg>
+            </button>
 
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => handleQueryChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => {
-              if (!verified && suggestions.length > 0) setShowDropdown(true);
-            }}
-            placeholder="Where are you headed? e.g. Paris, Tokyo…"
-            className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent"
-            autoComplete="off"
-            spellCheck={false}
-          />
+            {/* Mode dropdown */}
+            {showModeMenu && (
+              <div className="absolute top-full left-0 z-50 mt-2 w-52 bg-surface border border-border rounded-2xl shadow-lg py-1 overflow-hidden">
+                {MODES.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => switchMode(m.value)}
+                    className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors ${
+                      mode === m.value
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-text-primary hover:bg-bg-page"
+                    }`}
+                  >
+                    <span>{m.icon}</span>
+                    <span>{m.label}</span>
+                    {mode === m.value && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4 ml-auto">
+                        <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-          {/* Spinner while fetching */}
-          {loadingSugs && (
-            <svg
-              className="w-4 h-4 text-text-placeholder animate-spin shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-          )}
+          {/* ── Search inputs ── */}
+          <div className="flex flex-1 items-center px-4 sm:px-3 py-1 gap-2 min-w-0">
 
-          <button
-            onClick={handleSubmit}
-            disabled={!verified}
-            className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-3 sm:py-2.5 rounded-xl transition-colors shrink-0 w-full sm:w-auto"
-          >
-            Search
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              className="w-3.5 h-3.5"
+            {/* Inspire mode — no input */}
+            {mode === "inspire" && (
+              <p className="flex-1 py-3 text-[15px] text-text-secondary italic">
+                We&apos;ll ask you a few quick questions…
+              </p>
+            )}
+
+            {/* Plan / Event mode — event name input (event only) */}
+            {mode === "event" && (
+              <>
+                <input
+                  type="text"
+                  value={eventName}
+                  onChange={(e) => setEventName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && canSubmit) handleSubmit(); }}
+                  placeholder="What's the event? e.g. Oktoberfest"
+                  className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent min-w-0"
+                  autoComplete="off"
+                />
+                <div className="w-px h-5 bg-border shrink-0" />
+              </>
+            )}
+
+            {/* Plan / Event mode — city autocomplete */}
+            {mode !== "inspire" && (
+              <>
+                {verified ? (
+                  <svg className="w-5 h-5 text-primary shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-text-placeholder shrink-0" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                  </svg>
+                )}
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => handleQueryChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => { if (!verified && suggestions.length > 0) setShowDropdown(true); }}
+                  placeholder={currentMode.cityPlaceholder}
+                  className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent min-w-0"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </>
+            )}
+
+            {/* Spinner */}
+            {loadingSugs && (
+              <svg className="w-4 h-4 text-text-placeholder animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
+          </div>
+
+          {/* ── Submit button ── */}
+          <div className="px-3 pb-3 sm:pb-0 sm:pr-2">
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-3 sm:py-2.5 rounded-xl transition-colors shrink-0 w-full sm:w-auto"
             >
-              <path d="M8.75 3.75a.75.75 0 00-1.5 0v3.5h-3.5a.75.75 0 000 1.5h3.5v3.5a.75.75 0 001.5 0v-3.5h3.5a.75.75 0 000-1.5h-3.5v-3.5z" />
-            </svg>
-          </button>
+              {mode === "inspire" ? "Let's go" : "Search"}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                <path fillRule="evenodd" d="M2 8a.75.75 0 0 1 .75-.75h8.69L8.22 4.03a.75.75 0 0 1 1.06-1.06l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 0 1-1.06-1.06l3.22-3.22H2.75A.75.75 0 0 1 2 8Z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Autocomplete dropdown */}
@@ -282,36 +388,15 @@ export default function HomePage() {
               <li key={city.id} className="first:pt-1 last:pb-1">
                 <button
                   type="button"
-                  onMouseDown={(e) => {
-                    // Prevent input blur firing before the click registers
-                    e.preventDefault();
-                    selectCity(city);
-                  }}
+                  onMouseDown={(e) => { e.preventDefault(); selectCity(city); }}
                   className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors ${
-                    i === activeIndex
-                      ? "bg-primary/10 text-primary"
-                      : "hover:bg-bg-page text-text-primary"
+                    i === activeIndex ? "bg-primary/10 text-primary" : "hover:bg-bg-page text-text-primary"
                   }`}
                 >
-                  <svg
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      i === activeIndex ? "text-primary" : "text-text-placeholder"
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.75}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
-                    />
+                  <svg className={`w-4 h-4 shrink-0 ${i === activeIndex ? "text-primary" : "text-text-placeholder"}`}
+                    fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                   </svg>
                   <span>
                     <span className="font-medium">{city.name}</span>
@@ -326,25 +411,48 @@ export default function HomePage() {
           </ul>
         )}
 
-        {/* Quick-pick chips */}
-        <div className="flex flex-wrap gap-2 mt-4 justify-center px-1">
-          {QUICK_PICKS.map((pick) => (
-            <button
-              key={pick.label}
-              onClick={() => {
-                const display = `${pick.city}, ${pick.country}`;
-                setQuery(display);
-                setVerified(true);
-                setSuggestions([]);
-                setShowDropdown(false);
-                router.push(`/clarifying?q=${encodeURIComponent(display)}`);
-              }}
-              className="bg-surface border border-border text-text-secondary text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition-colors"
-            >
-              {pick.label}
-            </button>
-          ))}
-        </div>
+        {/* Quick picks */}
+        {mode === "plan" && (
+          <div className="flex flex-wrap gap-2 mt-4 justify-center px-1">
+            {QUICK_PICKS_PLAN.map((pick) => (
+              <button
+                key={pick.label}
+                onClick={() => {
+                  const display = `${pick.city}, ${pick.country}`;
+                  setQuery(display);
+                  setVerified(true);
+                  setSuggestions([]);
+                  setShowDropdown(false);
+                  router.push(`/clarifying?q=${encodeURIComponent(display)}`);
+                }}
+                className="bg-surface border border-border text-text-secondary text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition-colors"
+              >
+                {pick.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {mode === "event" && (
+          <div className="flex flex-wrap gap-2 mt-4 justify-center px-1">
+            {QUICK_PICKS_EVENT.map((pick) => (
+              <button
+                key={pick.label}
+                onClick={() => {
+                  setEventName(pick.event);
+                  setQuery(pick.city);
+                  setVerified(true);
+                  router.push(
+                    `/event?event=${encodeURIComponent(pick.event)}&q=${encodeURIComponent(pick.city)}`
+                  );
+                }}
+                className="bg-surface border border-border text-text-secondary text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition-colors"
+              >
+                {pick.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Last saved trip */}
@@ -354,10 +462,7 @@ export default function HomePage() {
             <h2 className="font-serif text-xl font-bold text-text-primary">
               Your last saved trip
             </h2>
-            <Link
-              href="/saved"
-              className="text-sm text-primary font-medium hover:underline shrink-0"
-            >
+            <Link href="/saved" className="text-sm text-primary font-medium hover:underline shrink-0">
               View all saved trips →
             </Link>
           </div>

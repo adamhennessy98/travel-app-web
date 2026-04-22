@@ -248,7 +248,7 @@ function LoadingState({ query }: { query: string }) {
           <h2 className="font-serif text-4xl font-bold text-white">{query}</h2>
         </div>
         <p className="text-white/50 text-sm max-w-xs">
-          Crafting a day-by-day plan with flights, hotels, restaurants, and experiences…
+          Searching real flights &amp; hotels, then crafting your day-by-day plan…
         </p>
       </div>
     </div>
@@ -292,7 +292,7 @@ function ResultsContent() {
         }
       }
 
-      fetch("/api/trip", {
+      fetch("/api/search", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

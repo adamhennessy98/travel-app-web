@@ -46,7 +46,7 @@ const MODES: {
     label: "Plan a trip",
     icon: "✈️",
     cityPlaceholder: "Where are you headed? e.g. Paris, Tokyo…",
-    subtitle: "Tell us where you're headed — we'll handle the rest.",
+    subtitle: "Tell us where you're headed, and we'll handle the rest.",
   },
   {
     value: "event",
@@ -100,6 +100,9 @@ export default function HomePage() {
   // Event-mode extra field
   const [eventName, setEventName] = useState("");
 
+  // Inspire-mode freeform input
+  const [inspireQuery, setInspireQuery] = useState("");
+
   // Refs
   const debounceRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
@@ -121,6 +124,18 @@ export default function HomePage() {
     document.addEventListener("mousedown", onOutsideClick);
     return () => document.removeEventListener("mousedown", onOutsideClick);
   }, []);
+
+  useEffect(() => {
+    if (!showModeMenu && !showDropdown) return;
+    function onEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setShowModeMenu(false);
+        setShowDropdown(false);
+      }
+    }
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [showModeMenu, showDropdown]);
 
   // Fetch last saved trip
   useEffect(() => {
@@ -215,7 +230,10 @@ export default function HomePage() {
 
   function handleSubmit() {
     if (mode === "inspire") {
-      router.push("/inspiration");
+      const params = inspireQuery.trim()
+        ? `?q=${encodeURIComponent(inspireQuery.trim())}`
+        : "";
+      router.push(`/inspiration${params}`);
       return;
     }
     if (!verified) return;
@@ -249,7 +267,7 @@ export default function HomePage() {
           <br />
           escape.
         </h1>
-        <p className="text-text-secondary text-lg transition-all duration-300">
+        <p className="text-text-secondary text-lg max-w-prose mx-auto text-pretty transition-colors duration-200 ease-out">
           {currentMode.subtitle}
         </p>
       </div>
@@ -264,8 +282,12 @@ export default function HomePage() {
           <div className="relative shrink-0">
             <button
               type="button"
+              id="search-mode-trigger"
+              aria-haspopup="listbox"
+              aria-expanded={showModeMenu}
+              aria-controls="search-mode-menu"
               onClick={() => setShowModeMenu((v) => !v)}
-              className="flex items-center gap-2 px-4 py-3.5 sm:py-0 sm:h-full text-sm font-semibold text-text-primary hover:text-primary transition-colors whitespace-nowrap sm:border-r sm:border-border border-b sm:border-b-0 border-border w-full sm:w-auto justify-between sm:justify-start"
+              className="flex items-center gap-2 px-4 py-3.5 sm:py-0 sm:h-full min-h-11 sm:min-h-0 text-sm font-semibold text-text-primary hover:text-primary transition-colors duration-200 ease-out whitespace-nowrap sm:border-r sm:border-border border-b sm:border-b-0 border-border w-full sm:w-auto justify-between sm:justify-start rounded-t-2xl sm:rounded-none sm:rounded-l-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-surface focus-visible:z-10"
             >
               <span className="flex items-center gap-2">
                 <span>{currentMode.icon}</span>
@@ -279,13 +301,20 @@ export default function HomePage() {
 
             {/* Mode dropdown */}
             {showModeMenu && (
-              <div className="absolute top-full left-0 z-50 mt-2 w-52 bg-surface border border-border rounded-2xl shadow-lg py-1 overflow-hidden">
+              <div
+                id="search-mode-menu"
+                role="listbox"
+                aria-labelledby="search-mode-trigger"
+                className="absolute top-full left-0 z-50 mt-2 w-52 bg-surface border border-border rounded-2xl shadow-lg py-1 overflow-hidden"
+              >
                 {MODES.map((m) => (
                   <button
                     key={m.value}
                     type="button"
+                    role="option"
+                    aria-selected={mode === m.value}
                     onClick={() => switchMode(m.value)}
-                    className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors ${
+                    className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors duration-200 ease-out ${
                       mode === m.value
                         ? "bg-primary/10 text-primary font-semibold"
                         : "text-text-primary hover:bg-bg-page"
@@ -307,11 +336,17 @@ export default function HomePage() {
           {/* ── Search inputs ── */}
           <div className="flex flex-1 items-center px-4 sm:px-3 py-1 gap-2 min-w-0">
 
-            {/* Inspire mode — no input */}
+            {/* Inspire mode — freeform input */}
             {mode === "inspire" && (
-              <p className="flex-1 py-3 text-[15px] text-text-secondary italic">
-                We&apos;ll ask you a few quick questions…
-              </p>
+              <input
+                type="text"
+                value={inspireQuery}
+                onChange={(e) => setInspireQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+                placeholder="e.g. warm beach holiday, somewhere new in Europe…"
+                className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent min-w-0"
+                autoComplete="off"
+              />
             )}
 
             {/* Plan / Event mode — event name input (event only) */}
@@ -323,7 +358,7 @@ export default function HomePage() {
                   onChange={(e) => setEventName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && canSubmit) handleSubmit(); }}
                   placeholder="What's the event? e.g. Oktoberfest"
-                  className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent min-w-0"
+                  className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-0 rounded-sm"
                   autoComplete="off"
                 />
                 <div className="w-px h-5 bg-border shrink-0" />
@@ -345,12 +380,22 @@ export default function HomePage() {
                 )}
                 <input
                   type="text"
+                  id="city-search"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={showDropdown && suggestions.length > 0}
+                  aria-controls={suggestions.length > 0 ? "city-suggestions" : undefined}
+                  aria-activedescendant={
+                    activeIndex >= 0 && suggestions[activeIndex]
+                      ? `city-opt-${suggestions[activeIndex].id}`
+                      : undefined
+                  }
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={() => { if (!verified && suggestions.length > 0) setShowDropdown(true); }}
                   placeholder={currentMode.cityPlaceholder}
-                  className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent min-w-0"
+                  className="flex-1 py-4 text-[15px] text-text-primary placeholder:text-text-placeholder outline-none bg-transparent min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-0 rounded-sm"
                   autoComplete="off"
                   spellCheck={false}
                 />
@@ -383,13 +428,21 @@ export default function HomePage() {
 
         {/* Autocomplete dropdown */}
         {showDropdown && suggestions.length > 0 && (
-          <ul className="absolute top-full left-0 right-0 z-50 mt-2 bg-surface border border-border rounded-2xl shadow-lg overflow-hidden">
+          <ul
+            id="city-suggestions"
+            role="listbox"
+            aria-label="City suggestions"
+            className="absolute top-full left-0 right-0 z-50 mt-2 bg-surface border border-border rounded-2xl shadow-lg overflow-hidden"
+          >
             {suggestions.map((city, i) => (
               <li key={city.id} className="first:pt-1 last:pb-1">
                 <button
                   type="button"
+                  id={`city-opt-${city.id}`}
+                  role="option"
+                  aria-selected={i === activeIndex}
                   onMouseDown={(e) => { e.preventDefault(); selectCity(city); }}
-                  className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors ${
+                  className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition-colors duration-200 ease-out ${
                     i === activeIndex ? "bg-primary/10 text-primary" : "hover:bg-bg-page text-text-primary"
                   }`}
                 >
@@ -417,6 +470,7 @@ export default function HomePage() {
             {QUICK_PICKS_PLAN.map((pick) => (
               <button
                 key={pick.label}
+                type="button"
                 onClick={() => {
                   const display = `${pick.city}, ${pick.country}`;
                   setQuery(display);
@@ -425,7 +479,7 @@ export default function HomePage() {
                   setShowDropdown(false);
                   router.push(`/clarifying?q=${encodeURIComponent(display)}`);
                 }}
-                className="bg-surface border border-border text-text-secondary text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition-colors"
+                className="bg-surface border border-border text-text-secondary text-sm px-4 py-2.5 min-h-10 rounded-full hover:border-primary hover:text-primary transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page"
               >
                 {pick.label}
               </button>
@@ -438,6 +492,7 @@ export default function HomePage() {
             {QUICK_PICKS_EVENT.map((pick) => (
               <button
                 key={pick.label}
+                type="button"
                 onClick={() => {
                   setEventName(pick.event);
                   setQuery(pick.city);
@@ -446,7 +501,7 @@ export default function HomePage() {
                     `/event?event=${encodeURIComponent(pick.event)}&q=${encodeURIComponent(pick.city)}`
                   );
                 }}
-                className="bg-surface border border-border text-text-secondary text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition-colors"
+                className="bg-surface border border-border text-text-secondary text-sm px-4 py-2.5 min-h-10 rounded-full hover:border-primary hover:text-primary transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page"
               >
                 {pick.label}
               </button>
@@ -462,15 +517,21 @@ export default function HomePage() {
             <h2 className="font-serif text-xl font-bold text-text-primary">
               Your last saved trip
             </h2>
-            <Link href="/saved" className="text-sm text-primary font-medium hover:underline shrink-0">
+            <Link
+              href="/saved"
+              className="text-sm text-primary font-medium hover:underline shrink-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page"
+            >
               View all saved trips →
             </Link>
           </div>
 
-          <Link href={`/saved/${lastTrip.id}`}>
-            <div className="bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow group">
+          <Link
+            href={`/saved/${lastTrip.id}`}
+            className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page"
+          >
+            <div className="bg-surface rounded-2xl border border-border overflow-hidden hover:shadow-md transition-shadow duration-200 ease-out group">
               <div className="relative h-48 overflow-hidden">
-                <div className="absolute inset-0 overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                <div className="absolute inset-0 overflow-hidden transition-transform duration-500 ease-out motion-reduce:transition-none group-hover:scale-105 motion-reduce:group-hover:scale-100">
                   <SavedHeroImage
                     heroUrl={lastTrip.hero_image_url}
                     heroAttribution={lastTrip.hero_image_attribution}

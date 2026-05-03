@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-02T00:00:00.000Z",
+  "title": "Design System: YourWeekend",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Horizon Blue",
+        "canonical": "#2563eb",
+        "tonalRamp": [
+          "oklch(28% 0.09 264)",
+          "oklch(36% 0.14 264)",
+          "oklch(44% 0.18 264)",
+          "oklch(52% 0.2 264)",
+          "oklch(58% 0.19 264)",
+          "oklch(68% 0.16 264)",
+          "oklch(78% 0.12 264)",
+          "oklch(90% 0.06 264)"
+        ]
+      },
+      "bg-page": {
+        "role": "neutral",
+        "displayName": "Page Mist",
+        "canonical": "#f0f4f9",
+        "tonalRamp": [
+          "oklch(22% 0.02 250)",
+          "oklch(35% 0.025 250)",
+          "oklch(48% 0.03 250)",
+          "oklch(58% 0.035 250)",
+          "oklch(72% 0.04 250)",
+          "oklch(82% 0.035 250)",
+          "oklch(90% 0.03 250)",
+          "oklch(96% 0.02 250)"
+        ]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Ink Slate",
+        "canonical": "#0f172a",
+        "tonalRamp": [
+          "oklch(12% 0.02 264)",
+          "oklch(18% 0.025 264)",
+          "oklch(25% 0.03 264)",
+          "oklch(35% 0.035 264)",
+          "oklch(45% 0.04 264)",
+          "oklch(55% 0.04 264)",
+          "oklch(65% 0.035 264)",
+          "oklch(75% 0.03 264)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headlines and emotional trip framing only."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Inputs, lists, autocomplete, and UI chrome."
+      }
+    },
+    "shadows": [
+      {
+        "name": "resting-card",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "Search shell and subtle cards at rest (shadow-sm)."
+      },
+      {
+        "name": "overlay-float",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Dropdowns, account menu, autocomplete panel."
+      },
+      {
+        "name": "card-hover",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        "purpose": "Saved trip card hover lift."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-colors",
+        "value": "color, background-color, border-color 150ms ease",
+        "purpose": "Default interactive state crossfade for buttons and links."
+      },
+      {
+        "name": "transition-transform-slow",
+        "value": "transform 500ms ease",
+        "purpose": "Hero image scale on card hover only where specified."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main CTA inside search module and equivalent commit actions.",
+      "html": "<button type=\"button\" class=\"ds-btn-primary\">Search<svg class=\"ds-btn-primary__icon\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" d=\"M2 8a.75.75 0 0 1 .75-.75h8.69L8.22 4.03a.75.75 0 0 1 1.06-1.06l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 0 1-1.06-1.06l3.22-3.22H2.75A.75.75 0 0 1 2 8Z\" clip-rule=\"evenodd\" /></svg></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: #2563eb; color: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; padding: 0.625rem 1.25rem; border: none; border-radius: 0.75rem; cursor: pointer; transition: background-color 150ms ease; } .ds-btn-primary:hover { background: #1d4ed8; } .ds-btn-primary:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; } .ds-btn-primary__icon { width: 0.875rem; height: 0.875rem; }"
+    },
+    {
+      "name": "Outline Chip",
+      "kind": "chip",
+      "refersTo": "chip-outline",
+      "description": "Quick destination or event shortcuts under the search shell.",
+      "html": "<button type=\"button\" class=\"ds-chip\">Paris</button>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #64748b; background: #ffffff; border: 1px solid #e2e8f0; padding: 0.5rem 1rem; border-radius: 9999px; cursor: pointer; transition: color 150ms ease, border-color 150ms ease; } .ds-chip:hover { color: #2563eb; border-color: #2563eb; } .ds-chip:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }"
+    },
+    {
+      "name": "Desktop Nav Link",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "TopNav text links for Saved Trips and Profile.",
+      "html": "<a href=\"#\" class=\"ds-nav-link ds-nav-link--active\">Saved Trips</a>",
+      "css": ".ds-nav-link { display: inline-block; padding: 0.5rem 1rem; border-radius: 0.5rem; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #64748b; text-decoration: none; transition: color 150ms ease; } .ds-nav-link:hover { color: #0f172a; } .ds-nav-link--active { color: #2563eb; font-weight: 600; } .ds-nav-link:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }"
+    },
+    {
+      "name": "Account Icon Button",
+      "kind": "button",
+      "refersTo": "",
+      "description": "Circular trigger opening account dropdown.",
+      "html": "<button type=\"button\" class=\"ds-account\" aria-label=\"Account menu\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 20 20\" fill=\"currentColor\" class=\"ds-account__svg\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" d=\"M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-5.5-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM10 12a5.99 5.99 0 00-4.793 2.39A6.483 6.483 0 0010 16.5a6.483 6.483 0 004.793-2.11A5.99 5.99 0 0010 12z\" clip-rule=\"evenodd\" /></svg></button>",
+      "css": ".ds-account { width: 2.25rem; height: 2.25rem; border: none; border-radius: 9999px; background: rgb(37 99 235 / 0.1); color: #2563eb; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 150ms ease; } .ds-account:hover { background: rgb(37 99 235 / 0.2); } .ds-account:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; } .ds-account__svg { width: 1.25rem; height: 1.25rem; }"
+    },
+    {
+      "name": "Search Shell",
+      "kind": "card",
+      "refersTo": "search-shell",
+      "description": "Unified mode selector, fields, and submit in one rounded container.",
+      "html": "<div class=\"ds-search-shell\"><span class=\"ds-search-shell__label\">Search module</span></div>",
+      "css": ".ds-search-shell { display: flex; flex-wrap: wrap; align-items: stretch; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); min-height: 3.5rem; } .ds-search-shell__label { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; color: #94a3b8; padding: 1rem; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Open Itinerary",
+    "overview": "YourWeekend reads as a bright, approachable trip companion: cool page wash, white surfaces, and a single electric blue accent that marks progress, selection, and the primary action. Playfair Display carries emotional headlines and section titles; Inter carries UI chrome, inputs, and dense copy. Density stays product-comfortable: generous radius on the hero search module, soft dropdowns, and quick-pick chips that feel tappable, not corporate.\n\nThe system rejects generic SaaS monoculture called out in PRODUCT.md: no purple-gradient heroes, no decorative gradient text, no identical icon-title-card grids as the default layout language, and no modal-first flows where inline steps would be clearer. Warmth shows up as clear hierarchy, friendly microcopy slots, and serif personality on hero moments, not as noisy decoration.",
+    "keyCharacteristics": [
+      "Restrained accent discipline — blue signals action, verification, and selection; neutrals carry structure.",
+      "Serif for story, sans for work — display moments are editorial; forms and nav stay utilitarian.",
+      "Soft containment — rounded-2xl shells and shadow-sm / shadow-lg separate layers without heavy skeuomorphism.",
+      "Three modes, one chrome — mode switcher, inputs, and submit share one search bar vocabulary across plan, event, and inspire."
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Strong blue appears where the user commits or orients: CTAs, selected rows, verified state, text links. Do not spray mid-blue as large background fields on whole sections.",
+        "section": "colors"
+      },
+      {
+        "name": "The No-Pure-Black Rule",
+        "body": "Text and borders use slate neutrals, not #000, keeping the cool mist page harmonious.",
+        "section": "colors"
+      },
+      {
+        "name": "The Serif Containment Rule",
+        "body": "Playfair is for hero and selective section headers, not for buttons, labels, or table data.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Page Rule",
+        "body": "The page background stays flat; elevation belongs to interactive layers (menus, cards, shell) that sit above it.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the mist page + white surface + blue action triangle for new screens so the app stays recognizable in planning moments.",
+      "Do use Playfair for hero and major section titles, Inter for everything interactive or data-dense.",
+      "Do use primary/10 washes for selected rows and active mobile nav items, reserving solid primary for one primary CTA per view where possible.",
+      "Do respect PRODUCT.md: three modes, one product — shared search-bar anatomy for plan, event, and inspire."
+    ],
+    "donts": [
+      "Don't lean into Generic SaaS / \"AI product\" monoculture as defined in PRODUCT.md: purple-gradient hero clichés, identical icon+title+card grids as the default pattern, side-stripe accent borders as fake structure, gradient text on headings, or modal-first flows when progressive inline steps would serve trust better.",
+      "Don't produce interchangeable template travel UIs: avoid layouts that could be swapped with any other category app by changing the logo alone.",
+      "Don't set body or long UI copy in Playfair; it erodes scanning for dates, cities, and prices.",
+      "Don't use pure #000 or #fff as system-wide text or page colors; stay on the defined slate and mist tokens."
+    ]
+  }
+}

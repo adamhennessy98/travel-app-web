@@ -17,7 +17,10 @@ export default function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
+    // Close overlays on navigation (intentional effect; not derivable from render).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- route change must reset sheet/dropdown
     setMobileOpen(false);
+    setMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -31,6 +34,18 @@ export default function TopNav() {
     };
   }, [mobileOpen]);
 
+  useEffect(() => {
+    if (!menuOpen && !mobileOpen) return;
+    function onEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        setMobileOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [menuOpen, mobileOpen]);
+
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -43,10 +58,13 @@ export default function TopNav() {
     <header className="sticky top-0 z-50 bg-surface border-b border-nav-border">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
         {/* Logo */}
-        <Link href="/" className="shrink-0 flex items-center">
+        <Link
+          href="/"
+          className="shrink-0 flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
           <img
             src="/VOYA-logo.png"
-            alt="VOYA"
+            alt="YourWeekend home"
             className="h-10 sm:h-12 w-auto"
           />
         </Link>
@@ -59,7 +77,7 @@ export default function TopNav() {
               <Link
                 key={href}
                 href={href}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
                   active
                     ? "text-primary font-semibold"
                     : "text-text-secondary hover:text-text-primary"
@@ -74,7 +92,7 @@ export default function TopNav() {
             <button
               type="button"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors"
+              className="w-11 h-11 sm:w-9 sm:h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
               aria-expanded={menuOpen}
               aria-haspopup="true"
               aria-label="Account menu"
@@ -92,7 +110,7 @@ export default function TopNav() {
                     setMenuOpen(false);
                     void handleSignOut();
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-page transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-page transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
                 >
                   Sign out
                 </button>
@@ -104,7 +122,7 @@ export default function TopNav() {
         {/* Mobile menu toggle */}
         <button
           type="button"
-          className="md:hidden p-2 -mr-2 rounded-lg text-text-primary hover:bg-bg-page transition-colors shrink-0"
+          className="md:hidden min-h-11 min-w-11 -mr-2 inline-flex items-center justify-center rounded-lg text-text-primary hover:bg-bg-page transition-colors duration-200 ease-out shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           aria-expanded={mobileOpen}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           onClick={() => setMobileOpen((o) => !o)}
@@ -139,7 +157,7 @@ export default function TopNav() {
                     key={href}
                     href={href}
                     onClick={() => setMobileOpen(false)}
-                    className={`px-3 py-3 rounded-xl text-base font-medium transition-colors ${
+                    className={`px-3 py-3 min-h-11 rounded-xl text-base font-medium transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset ${
                       active ? "bg-primary/10 text-primary" : "text-text-primary hover:bg-bg-page"
                     }`}
                   >
@@ -150,7 +168,7 @@ export default function TopNav() {
               <button
                 type="button"
                 onClick={() => void handleSignOut()}
-                className="text-left px-3 py-3 rounded-xl text-base font-medium text-text-secondary hover:bg-bg-page hover:text-text-primary transition-colors mt-1 border-t border-border pt-4"
+                className="text-left px-3 py-3 min-h-11 rounded-xl text-base font-medium text-text-secondary hover:bg-bg-page hover:text-text-primary transition-colors duration-200 ease-out mt-1 border-t border-border pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-inset"
               >
                 Sign out
               </button>
